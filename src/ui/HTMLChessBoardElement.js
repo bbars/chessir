@@ -17,7 +17,8 @@ tplBoard.innerHTML = `
 		border-radius: 2px;
 		width: auto;
 		
-		--transition-duration: 0.3s;
+		--transition-duration-fast: 0.3s;
+		--transition-duration-slow: calc(var(--transition-duration-fast) * 8);
 		--arrow-color-default: currentColor;
 		--arrow-color-move: #05f;
 		--arrow-color-attack: #d33;
@@ -78,16 +79,12 @@ tplBoard.innerHTML = `
 	:host #elRoot.animated #elCoordLabels > * > *,
 	:host #elRoot.animated #elArrows,
 	:host #elRoot.animated #elPieces > * {
-		transition: all var(--transition-duration) ease;
+		transition: all var(--transition-duration-fast) ease;
 	}
 	
-	:host #elCheckerboard {
-		
-	}
+	:host #elCheckerboard {}
 	
-	:host #elPieces {
-		
-	}
+	:host #elPieces {}
 	
 	:host #elCellWhite {
 		fill: var(--cell-fill-white);
@@ -100,7 +97,7 @@ tplBoard.innerHTML = `
 		opacity: 0;
 	}
 	:host #elRoot.animated #elPieces > [data-captured] {
-		transition: all calc(var(--transition-duration) * 8) ease;
+		transition: all var(--transition-duration-slow) ease;
 	}
 	:host #elPieces > [data-captured].white {
 		y: -1;
@@ -130,7 +127,7 @@ tplBoard.innerHTML = `
 	:host #elArrows > path {
 		stroke: var(--arrow-color-default);
 		marker-end: url(#markerDefault);
-		/*transition: all var(--transition-duration) ease;*/
+		/*transition: all var(--transition-duration-fast) ease;*/
 	}
 	:host #elArrows > path.move {
 		stroke: var(--arrow-color-move);
@@ -328,6 +325,7 @@ function dispatchEvent(element, eventType, detail) {
 
 export default class HTMLChessBoardElement extends HTMLElement {
 	_ignoreAttributeChanges = 0;
+	_state = 0;
 	
 	static get observedAttributes() {
 		return ['arrows', 'dots', 'swap', 'labels', 'state'];
@@ -357,11 +355,13 @@ export default class HTMLChessBoardElement extends HTMLElement {
 		this.attachShadow({ mode: 'open' });
 		this.shadowRoot.appendChild(tplBoard.content.cloneNode(true));
 		
-		// TODO: hardcode ided elements
-		var els = this.shadowRoot.querySelectorAll('[id]');
-		for (var i = els.length - 1; i >= 0; i--) {
-			this['$$' + els[i].id] = els[i];
-		}
+		// this.shadowRoot.querySelectorAll('[id]').forEach(el => this['$$' + el.id] = el);
+		
+		this.$$elArrows = this.shadowRoot.getElementById('elArrows');
+		this.$$elCells = this.shadowRoot.getElementById('elCells');
+		this.$$elFrontDots = this.shadowRoot.getElementById('elFrontDots');
+		this.$$elPieces = this.shadowRoot.getElementById('elPieces');
+		this.$$elRoot = this.shadowRoot.getElementById('elRoot');
 		
 		for (const a of 'abcdefgh') {
 			for (const n of '12345678') {
@@ -379,7 +379,7 @@ export default class HTMLChessBoardElement extends HTMLElement {
 		this.arrows = this.arrows;
 		this.swap = this.swap;
 		this.labels = this.labels;
-		this.state = this.state;
+		this.state = this._state;
 		
 		this.$$elCells.addEventListener('click', this.$$onCellsClick);
 	}
@@ -448,18 +448,23 @@ export default class HTMLChessBoardElement extends HTMLElement {
 	}
 	
 	get state() {
-		return this.getAttribute('state');
+		return this._state.clone();
 	}
 	set state(value) {
 		value = (value || '').toString();
-		this.$$redrawState(value);
+		if (!value) {
+			this._state = null;
+		}
+		else if (value instanceof State) {
+			this._state._setValues(value);
+		}
+		else {
+			this._state = State.fromFen(value);
+		}
+		this.$$redrawState(this._state);
 		this._ignoreAttributeChanges++;
-		this.setAttribute('state', value);
+		this.setAttribute('state', !this._state ? '' : this._state.toFen());
 		this._ignoreAttributeChanges--;
-	}
-	
-	get readyState() {
-		return this.$$readyState || -1;
 	}
 	
 	////////////////
@@ -523,7 +528,7 @@ export default class HTMLChessBoardElement extends HTMLElement {
 				}
 				return;
 			}
-			const state = State.fromFen(value);
+			const state = value instanceof State ? value : State.fromFen(value);
 			let i = -1;
 			for (const [coordI, piece] of state.listEntries(null)) {
 				i++;
@@ -555,8 +560,7 @@ export default class HTMLChessBoardElement extends HTMLElement {
 	}
 	
 	applyMove(move) {
-		const state = State.fromFen(this.state);
-		move = state.applyMove(move);
+		move = this._state.applyMove(move);
 		
 		if (move instanceof MoveCapture) {
 			const elCapPiece = this.$$getPiece(move.cap);
@@ -575,9 +579,8 @@ export default class HTMLChessBoardElement extends HTMLElement {
 			elMovePiece2.dataset.n = move.dst2.n;
 		}
 		
-		const value = state.toFen();
 		this._ignoreAttributeChanges++;
-		this.setAttribute('state', state.toFen());
+		this.setAttribute('state', this._state.toFen());
 		this._ignoreAttributeChanges--;
 		
 		return move;
@@ -587,7 +590,6 @@ export default class HTMLChessBoardElement extends HTMLElement {
 		if (!(move instanceof Move)) {
 			throw new Error(`Argument move must be an instance of Move`);
 		}
-		const state = State.fromFen(this.state);
 		
 		const elMovePiece = this.$$getPiece(move.dst);
 		elMovePiece.dataset.a = move.src.a;
@@ -615,6 +617,17 @@ export default class HTMLChessBoardElement extends HTMLElement {
 		return move;
 	}
 	
+	setState(state) {
+		try {
+			const move = this._state.guessMove(state);
+			return this.applyMove(move);
+		}
+		catch {
+			this.state = state;
+			return null;
+		}
+	}
+	
 	static generateArrows(move, state) {
 		const res = [];
 		if (move) {
@@ -625,6 +638,18 @@ export default class HTMLChessBoardElement extends HTMLElement {
 			for (const src of state.listAttacks(coordK, !state.activeWhite)) {
 				res.push(src.txt + coordK.txt + '.attack');
 			}
+		}
+		return res;
+	}
+	
+	static generateMoveDots(state, src) {
+		const res = [];
+		for (const move of state.listMoves(src)) {
+			let dot = move.dst.txt;
+			if (move instanceof MoveCapture) {
+				dot += '.attack';
+			}
+			res.push(dot);
 		}
 		return res;
 	}

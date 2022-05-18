@@ -10,16 +10,16 @@ import History from './History.js';
 import PgnTokenizer from './PgnTokenizer.js';
 import tokenizerflow from './tokenizerflow.js';
 
-export default class Game extends State {
+export default class Game {
+	state;
 	history;
-	pos = [-1];
+	_pos = [-1];
 	meta = {};
 
 	constructor(initialState, meta) {
-		super();
-		this.history = new History(initialState || State.createInitial());
-		this._setValues(this.history.initialState);
-		this.pos = [-1];
+		this.state = initialState || State.createInitial();
+		this.history = new History(this.state.clone());
+		this._pos = [-1];
 		this.meta = Object.assign(this.meta, meta);
 	}
 
@@ -28,29 +28,33 @@ export default class Game extends State {
 	}
 
 	applyMove(move) {
-		move = super.applyMove(move);
-		const nextPos = this.history.addNextMove(this.pos, move);
-		this.pos = nextPos;
+		move = this.state.applyMove(move);
+		const nextPos = this.history.addNextMove(this._pos, move);
+		this._pos = nextPos;
 		return move;
 	}
 
 	undoMove() {
-		const curMove = this.history.getMove(this.pos);
+		const curMove = this.history.getMove(this._pos);
 		if (!curMove) {
 			return null;
 		}
-		const prevPos = this.history.findPrevMovePath(this.pos);
+		const prevPos = this.history.findPrevMovePath(this._pos);
 		let prevMove = null;
 		if (prevPos.length === 1 && prevPos[0] < 0) {
-			this._setValues(State.fromFen(curMove.preFen));
+			this.state._setValues(State.fromFen(curMove.preFen));
 			prevPos[0] = -1;
 		}
 		else {
 			prevMove = this.history.getMove(prevPos);
-			this._setValues(State.fromFen(prevMove.postFen));
+			this.state._setValues(State.fromFen(prevMove.postFen));
 		}
-		this.pos = prevPos;
+		this._pos = prevPos;
 		return prevMove;
+	}
+
+	get pos() {
+		return [].concat(this._pos);
 	}
 
 	async setPos(pos) {
@@ -58,16 +62,16 @@ export default class Game extends State {
 		let move;
 		if (pos.length === 1 && pos[0] < 0) {
 			pos[0] = -1;
-			this._setValues(this.history.initialState || State.createInitial());
+			this.state._setValues(this.history.initialState || State.createInitial());
 		}
 		else {
 			move = await this.history.getMoveParsed(pos);
 			if (!move) {
 				throw new Error(`Invalid historical position`);
 			}
-			this._setValues(State.fromFen(move.postFen));
+			this.state._setValues(State.fromFen(move.postFen));
 		}
-		this.pos = pos;
+		this._pos = pos;
 		return move;
 	}
 
@@ -80,7 +84,7 @@ export default class Game extends State {
 	}
 
 	getCurrentMove() {
-		return this.history.getMove(this.pos);
+		return this.history.getMove(this._pos);
 	}
 
 	static async parsePgn(pgn, parseMovesMaxDepth = 1) {
@@ -136,7 +140,7 @@ export default class Game extends State {
 		
 		await history.parseMoves(parseMovesMaxDepth);
 		
-		const res = new Game(null, meta);
+		const res = new Game(history.initialState.clone(), meta);
 		res.history = history;
 		return res;
 	}
@@ -158,5 +162,31 @@ export default class Game extends State {
 			res += ' ' + this.meta['Result'];
 		}
 		return res.slice(1);
+	}
+
+	// wrap State:
+
+	get(...args) {
+		return this.state.get(...args);
+	}
+
+	get activeWhite() {
+		return game.state.activeWhite;
+	}
+
+	*listMoves(...args) {
+		yield* this.state.listMoves(...args);
+	}
+
+	*listAttacks(...args) {
+		yield* this.state.listAttacks(...args);
+	}
+
+	toFen(...args) {
+		return this.state.toFen(...args);
+	}
+
+	findKing(...args) {
+		return this.state.findKing(...args);
 	}
 }

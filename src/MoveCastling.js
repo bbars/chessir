@@ -20,9 +20,13 @@ export default class MoveCastling extends Move {
 	}
 
 	toString(pretty) {
-		return this.isLong ? 'O-O-O' : 'O-O';
-		return (this.piece.isWhite ? s.toUpperCase() : s)
+		const s = this.isLong ? 'O-O-O' : 'O-O';
+		return (this.piece.isWhite ? s : s.toLowerCase())
 			+ (this.fin || '')
 		;
+	}
+
+	toPgnString() {
+		return this.isLong ? 'O-O-O' : 'O-O';
 	}
 }

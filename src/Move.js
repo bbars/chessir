@@ -35,4 +35,14 @@ export default class Move extends MoveBase {
 			+ (this.fin || '')
 		;
 	}
+
+	toPgnString() {
+		return ''
+			+ (this.piece.toPgnString())
+			+ (this.src.toPgnString())
+			+ (this.dst.toPgnString())
+			+ (!this.mut ? '' : '=' + this.mut.toPgnString())
+			+ (this.fin || '')
+		;
+	}
 }

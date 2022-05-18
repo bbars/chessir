@@ -20,7 +20,15 @@ export default class Piece {
 
 	toString(pretty) {
 		throw new Error(`This method should be implemented`);
+		return this.toFenString();
+	}
+
+	toFenString() {
 		return this.code;
+	}
+
+	toPgnString() {
+		return this.name;
 	}
 
 	getMoves(state, src) {

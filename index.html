@@ -8,7 +8,11 @@
 <script type="module" src="./src/ui/HTMLChessBoardElement.js"></script>
 </head>
 <body>
-<chess-board id="chessBoard" labels></chess-board>
+<link rel="stylesheet" type="text/css" href="./all.css">
+<main>
+	<chess-board id="chessBoard" labels></chess-board>
+	<div id="chessHistory"></div>
+</main>
 <style type="text/css">
 
 #chessBoard {
@@ -19,7 +23,7 @@
 </style>
 <script type="module">
 
-import { Game, MoveCapture} from './index.js';
+import { Game, MoveCapture, HTMLChessBoardElement } from './index.js';
 
 localStorage.token = localStorage.token || randomString(16);
 const userId = localStorage.token.slice(0, 8);
@@ -101,7 +105,7 @@ async function onChessClick(event) {
 			// const move = game.applyMove(moveAbbr);
 			// chessBoard.applyMove(moveAbbr);
 			// chessBoard.dots = '';
-			// chessBoard.arrows = chessBoard.constructor.generateArrows(move, game);
+			// chessBoard.arrows = HTMLChessBoardElement.generateArrows(move, game);
 			
 			await new Promise((resolve, reject) => {
 				socket.emit('applyMove', game.meta.Id, moveAbbr, (err, moveAbbr) => {
@@ -117,18 +121,9 @@ async function onChessClick(event) {
 		}
 	}
 	else if (piece && piece.isWhite === game.activeWhite) {
-		let canMove = 0;
-		const dots = [];
-		for (const move of game.listMoves(coord)) {
-			canMove++;
-			let dot = move.dst.txt;
-			if (move instanceof MoveCapture) {
-				dot += '.attack';
-			}
-			dots.push(dot);
-		}
-		chessBoard.dots = dots.join(' ');
-		if (canMove) {
+		const moveDots = HTMLChessBoardElement.generateMoveDots(chessBoard.state, coord);
+		chessBoard.dots = moveDots.join(' ');
+		if (moveDots.length) {
 			selected = { piece, coord };
 		}
 	}
@@ -150,7 +145,7 @@ function redrawChessBoard(moveToApply) {
 	}
 	
 	chessBoard.dots = '';
-	chessBoard.arrows = chessBoard.constructor.generateArrows(game.getCurrentMove(), game);
+	chessBoard.arrows = HTMLChessBoardElement.generateArrows(game.getCurrentMove(), game);
 	return moveToApply;
 }
 

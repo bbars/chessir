@@ -70,6 +70,10 @@ export default class Coord {
 		return this.txt;
 	}
 
+	toPgnString() {
+		return this.txt;
+	}
+
 	valueOf() {
 		return this.index;
 	}

@@ -639,6 +639,7 @@ export default class State {
 						continue;
 					}
 					move.mut = pieces.Piece.parse(checks.mut);
+					move.mut.isWhite = piece.isWhite;
 				}
 				
 				const state = this.constructor.fromFen(move.postFen);
@@ -707,5 +708,76 @@ export default class State {
 
 	checkFin() {
 		return this._checkFin(!this.activeWhite);
+	}
+
+	guessMove(state2) {
+		if (!(state2 instanceof this.constructor)) {
+			state2 = this.constructor.fromFen(state2);
+		}
+		const add = [];
+		const del = [];
+		const mod = [];
+		for (let coordI = this.constructor.SIZE * this.constructor.SIZE - 1; coordI >= 0; coordI--) {
+			const piece1 = this._board[coordI];
+			const piece2 = state2._board[coordI];
+			if (piece2 && !piece1) {
+				add.push({ coordI, piece: piece2 });
+			}
+			else if (piece1 && !piece2) {
+				del.push({ coordI, piece: piece1 });
+			}
+			else if (piece1 && piece2 && piece1.code !== piece2.code) {
+				mod.push({ coordI, piece1, piece2 });
+			}
+		}
+		let src, dst, mut;
+		// if (add.length === 1 && del.length === 1 && mod.length === 1) {
+		if (add.length === 2 && del.length === 2 && mod.length === 0) {
+			if (del[0].piece.name === 'K') {
+				src = Coord.fromIndex(del[0].coordI);
+			}
+			else {
+				src = Coord.fromIndex(del[1].coordI);
+			}
+			if (add[0].piece.name === 'K') {
+				dst = Coord.fromIndex(add[0].coordI);
+			}
+			else {
+				dst = Coord.fromIndex(add[1].coordI);
+			}
+		}
+		if (add.length === 1 && del.length === 1 && mod.length === 0) {
+			src = Coord.fromIndex(del[0].coordI);
+			dst = Coord.fromIndex(add[0].coordI);
+			if (del[0].piece.isWhite && add[0].piece.isWhite && del[0].piece.name !== add[0].piece.name) {
+				mut = pieces.Piece.parse(add[0].piece.code);
+			}
+		}
+		if (add.length === 0 && del.length === 1 && mod.length === 1) {
+			src = Coord.fromIndex(del[0].coordI);
+			dst = Coord.fromIndex(mod[0].coordI);
+			if (del[0].piece.isWhite && mod[0].piece2.isWhite && del[0].piece.name !== mod[0].piece2.name) {
+				mut = pieces.Piece.parse(mod[0].piece2.code);
+			}
+		}
+		if (add.length === 1 && del.length === 2 && mod.length === 0) {
+			// enPassant
+			src = Coord.fromIndex(del[0].coordI);
+			dst = Coord.fromIndex(add[0].coordI);
+			if (src.x === dst.x) {
+				src = Coord.fromIndex(del[1].coordI);
+			}
+		}
+		if (!src || !dst) {
+			throw new Error(`Unable to guess move`);
+		}
+		const move = this.clone().applyMove(src.txt + dst.txt);
+		if (mut) {
+			move.mut = mut;
+		}
+		if (move.postFen !== state2.toFen()) {
+			throw new Error(`Move found, but target state mismatch`);
+		}
+		return move;
 	}
 }

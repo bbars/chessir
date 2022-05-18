@@ -26,7 +26,7 @@ export default class History extends Array {
 					+ (activeWhite ? '.' : '...')
 				;
 			}
-			res += ' ' + move.toString();
+			res += ' ' + move.toPgnString();
 			let childrenRendered = false;
 			for (const child of move.children) {
 				childrenRendered = true;
@@ -34,7 +34,7 @@ export default class History extends Array {
 					res += ' (' + child._toPgn(activeWhite, fullmoveNumber) + ')';
 				}
 				else if (child instanceof Comment) {
-					res += ' ' + child.toString();
+					res += ' ' + child.toPgnString();
 				}
 				else {
 					res += ' { ' + child.toString() + ' }';
@@ -142,7 +142,6 @@ export default class History extends Array {
 				return path;
 			}
 			path.splice(-2);
-			// path[path.length - 1] += 1;
 		}
 	}
 

@@ -15,6 +15,10 @@ export default class PieceP extends Piece {
 		;
 	}
 
+	toPgnString() {
+		return '';
+	}
+
 	onMove(move) {
 	}
 
