@@ -1,0 +1,26 @@
+{
+  "type": "module",
+  "name": "chessir",
+  "version": "1.0.0",
+  "description": "Chess utilities and WebComponents",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Denis Borzenko (bars)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bbars/chessir.git"
+  },
+  "keywords": [
+    "chess"
+  ],
+  "bugs": {
+    "url": "https://github.com/bbars/chessir/issues"
+  },
+  "homepage": "https://github.com/bbars/chessir#readme",
+  "dependencies": {
+    "tokenizerflow": "^1.0.0"
+  }
+}
