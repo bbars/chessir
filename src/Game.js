@@ -12,7 +12,6 @@ import tokenizerflow from './tokenizerflow.js';
 
 export default class Game extends State {
 	history;
-	state;
 	pos = [-1];
 	meta = {};
 
@@ -139,7 +138,6 @@ export default class Game extends State {
 		
 		const res = new Game(null, meta);
 		res.history = history;
-		res.state = history.initialState.clone();
 		return res;
 	}
 

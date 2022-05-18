@@ -32,9 +32,7 @@ export default class State {
 	static FIN_DRAW = FIN_DRAW;
 	static FIN_CHECK = FIN_CHECK;
 	static FIN_CHECKMATE = FIN_CHECKMATE;
-	static get INITIAL_FEN_CLASSIC() {
-		return INITIAL_FEN_CLASSIC;
-	}
+	static INITIAL_FEN_CLASSIC = INITIAL_FEN_CLASSIC;
 
 	_board = [];
 	_activeWhite = null;
