@@ -30,7 +30,6 @@ export default class MoveCapture extends Move {
 			+ (this.piece.toPgnString())
 			+ (this.src.toPgnString())
 			+ ('x')
-			+ (!this.capPiece ? '' : this.capPiece.toPgnString())
 			+ (this.dst.toPgnString())
 			+ (!this.mut ? '' : '=' + this.mut.toPgnString())
 			+ (this.fin || '')
