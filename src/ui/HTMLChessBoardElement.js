@@ -316,8 +316,8 @@ tplBoard.innerHTML = `
 	</svg>
 `;
 
-function dispatchEvent(element, eventType, detail) {
-	element.dispatchEvent(new CustomEvent(eventType, {
+function dispatchEvent(target, eventType, detail) {
+	target.dispatchEvent(new CustomEvent(eventType, {
 		detail: detail,
 		bubbles: true,
 	}));
@@ -448,7 +448,7 @@ export default class HTMLChessBoardElement extends HTMLElement {
 	}
 	
 	get state() {
-		return this._state.clone();
+		return !this._state ? null : this._state.clone();
 	}
 	set state(value) {
 		value = (value || '').toString();
@@ -652,6 +652,18 @@ export default class HTMLChessBoardElement extends HTMLElement {
 			res.push(dot);
 		}
 		return res;
+	}
+	
+	showArrows(move = null) {
+		const arrows = this.constructor.generateArrows(move, this._state);
+		this.arrows = arrows;
+		return arrows;
+	}
+	
+	showMoveDots(src) {
+		const moveDots = this.constructor.generateMoveDots(this._state, src);
+		this.dots = moveDots;
+		return moveDots;
 	}
 	
 	$$getPiece(coord) {

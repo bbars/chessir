@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/bbars/chessir#readme",
   "dependencies": {
-    "tokenizerflow": "^1.0.0"
+    "tokenizerflow": "^1.0.0",
+    "event-target-shim": "^6.0.2"
   }
 }

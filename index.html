@@ -61,7 +61,20 @@ socket.on('connect', () => {
 	socket.emit('joinGame', gameId, async (err, pgn) => {
 		game = window.game = await Game.parsePgn(pgn);
 		const lastMove = await game.seekToEnd();
-		redrawChessBoard();
+		
+		chessBoard.state = game.state;
+		game.events.addEventListener('changePos', (event) => {
+			const game = event.detail.game;
+			const move = game.getCurrentMove();
+			chessBoard.setState(game.state);
+			chessBoard.showArrows(move);
+			chessBoard.dots = '';
+		});
+		game.events.addEventListener('applyMove', (event) => {
+			const game = event.detail.game;
+			chessHistory.textContent = game.history.toPgn();
+		});
+		
 		if (game.meta.White === userId) {
 			playWhite = true;
 		}
@@ -78,7 +91,6 @@ socket.on('applyMove', (gameId, moveAbbr) => {
 	}
 	console.log('applyMove', moveAbbr);
 	const move = game.applyMove(moveAbbr);
-	redrawChessBoard(move);
 });
 
 let selected = null;
@@ -102,18 +114,12 @@ async function onChessClick(event) {
 		}
 		else {
 			const moveAbbr = selected.coord.txt + coord.txt;
-			// const move = game.applyMove(moveAbbr);
-			// chessBoard.applyMove(moveAbbr);
-			// chessBoard.dots = '';
-			// chessBoard.arrows = HTMLChessBoardElement.generateArrows(move, game);
-			
 			await new Promise((resolve, reject) => {
 				socket.emit('applyMove', game.meta.Id, moveAbbr, (err, moveAbbr) => {
 					if (err) {
 						return reject(new Error(err));
 					}
 					const move = game.applyMove(moveAbbr);
-					redrawChessBoard(move);
 					resolve(move);
 				});
 			});
@@ -121,33 +127,14 @@ async function onChessClick(event) {
 		}
 	}
 	else if (piece && piece.isWhite === game.activeWhite) {
-		const moveDots = HTMLChessBoardElement.generateMoveDots(chessBoard.state, coord);
-		chessBoard.dots = moveDots.join(' ');
+		const moveDots = chessBoard.showMoveDots(coord);
+		chessBoard.dots = moveDots;
 		if (moveDots.length) {
 			selected = { piece, coord };
 		}
 	}
 }
 chessBoard.addEventListener('chessClick', onChessClick);
-
-function redrawChessBoard(moveToApply) {
-	if (moveToApply) {
-		try {
-			moveToApply = chessBoard.applyMove(moveToApply);
-		}
-		catch {
-			moveToApply = null;
-		}
-	}
-	
-	if (!moveToApply) {
-		chessBoard.state = game.toFen();
-	}
-	
-	chessBoard.dots = '';
-	chessBoard.arrows = HTMLChessBoardElement.generateArrows(game.getCurrentMove(), game);
-	return moveToApply;
-}
 
 function randomString(len) {
 	const c = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';

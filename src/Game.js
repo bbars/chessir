@@ -9,18 +9,28 @@ import Comment from './Comment.js';
 import History from './History.js';
 import PgnTokenizer from './PgnTokenizer.js';
 import tokenizerflow from './tokenizerflow.js';
+import { EventTarget, CustomEvent } from './events.js';
+
+function dispatchEvent(target, eventType, detail) {
+	target.dispatchEvent(new CustomEvent(eventType, {
+		detail: detail,
+		bubbles: true,
+	}));
+}
 
 export default class Game {
 	state;
 	history;
 	_pos = [-1];
 	meta = {};
+	events;
 
 	constructor(initialState, meta) {
 		this.state = initialState || State.createInitial();
 		this.history = new History(this.state.clone());
 		this._pos = [-1];
 		this.meta = Object.assign(this.meta, meta);
+		this.events = new EventTarget();
 	}
 
 	toString() {
@@ -28,9 +38,23 @@ export default class Game {
 	}
 
 	applyMove(move) {
+		const oldMove = this.history.getMove(this.pos);
 		move = this.state.applyMove(move);
 		const nextPos = this.history.addNextMove(this._pos, move);
+		const oldPos = this.pos;
 		this._pos = nextPos;
+		dispatchEvent(this.events, 'applyMove', {
+			game: this,
+			pos: this.pos,
+			oldPos: oldPos,
+			oldMove: oldMove,
+			move: move,
+		});
+		dispatchEvent(this.events, 'changePos', {
+			game: this,
+			pos: this.pos,
+			oldPos: oldPos,
+		});
 		return move;
 	}
 
@@ -49,7 +73,20 @@ export default class Game {
 			prevMove = this.history.getMove(prevPos);
 			this.state._setValues(State.fromFen(prevMove.postFen));
 		}
+		const oldPos = this.pos;
 		this._pos = prevPos;
+		dispatchEvent(this.events, 'undoMove', {
+			game: this,
+			pos: this.pos,
+			oldPos: oldPos,
+			oldMove: curMove,
+			move: prevMove,
+		});
+		dispatchEvent(this.events, 'changePos', {
+			game: this,
+			pos: this.pos,
+			oldPos: oldPos,
+		});
 		return prevMove;
 	}
 
@@ -71,7 +108,13 @@ export default class Game {
 			}
 			this.state._setValues(State.fromFen(move.postFen));
 		}
+		const oldPos = this.pos;
 		this._pos = pos;
+		dispatchEvent(this.events, 'changePos', {
+			game: this,
+			pos: this.pos,
+			prevPos: oldPos,
+		});
 		return move;
 	}
 
