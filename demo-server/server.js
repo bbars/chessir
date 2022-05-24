@@ -48,7 +48,7 @@ demoGame: {
 		[Black "aqYXzmqh"]
 		1. Pe2e4 Pb7b6 2. Bf1b5 Bc8b7 3. Qd1e2 Pe7e5 4. Qe2h5 Pg7g6 5. Qh5f3 Ng8f6 6. Ng1e2 Bb7xPe4 7. Qf3c3 Bf8c5 8. O-O Be4xPg2 9. Kg1xBg2 Nf6e4 10. Qc3xPe5+ Qd8e7 11. Qe5xQe7+ Bc5xQe7 12. Ne2g3 Ne4g5 13. Kg2g1 O-O
 	`);
-	await game.seekToEnd();
+	await game.seekEnd();
 	GAMES[game.meta.Id] = game;
 }
 
@@ -74,14 +74,15 @@ sio.on('connection', (socket) => {
 		return response(null, game.toPgn());
 	});
 	
-	socket.on('applyMove', (gameId, moveAbbr, response) => {
+	socket.on('applyMove', async (gameId, moveAbbr, curPos, response) => {
 		let game = GAMES[gameId];
 		if (!game) {
 			return response(`Game not found`, null);
 		}
 		try {
+			await game.setPos(curPos);
 			const move = game.applyMove(moveAbbr);
-			socket.in('game-' + gameId).emit('applyMove', gameId, move.toString());
+			socket.in('game-' + gameId).emit('applyMove', gameId, move.toString(), curPos);
 			return response(null, move.toString())
 		}
 		catch (err) {

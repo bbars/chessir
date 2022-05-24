@@ -11,19 +11,91 @@
 <link rel="stylesheet" type="text/css" href="./all.css">
 <main>
 	<chess-board id="chessBoard" labels></chess-board>
-	<div id="chessHistory"></div>
+	<fieldset id="chessHistory" data-type="History"></fieldset>
 </main>
-<style type="text/css">
-
-#chessBoard {
-	width: 100%;
-	font-family: 'Consolas', 'Roboto mono', monospace;
-}
-
-</style>
 <script type="module">
 
-import { Game, MoveCapture, HTMLChessBoardElement } from './index.js';
+import { Game, GameUiBridge } from './index.js';
+
+let gameUi = window.gameUi = null;
+let game = window.game = null;
+
+class SioGameUiBridge extends GameUiBridge {
+	static async create({ chessBoard, chessHistory, socket, gameId, userId }) {
+		socket.call = function (funcName, ...args) {
+			return new Promise((resolve, reject) => {
+				this.emit(funcName, ...args, function (err, res) {
+					if (err) {
+						reject(err);
+					}
+					else {
+						resolve(res);
+					}
+				});
+			});
+		};
+		
+		const pgn = await socket.call('joinGame', gameId);
+		const game = await Game.parsePgn(pgn);
+		const gameUi = new this({
+			game,
+			elBoard: chessBoard,
+			elHistory: chessHistory,
+		});
+		await game.seekEnd();
+		gameUi.socket = socket;
+		gameUi.gameId = gameId;
+		gameUi.userId = userId;
+		
+		if (game.meta.White === userId) {
+			gameUi.playWhite = true;
+		}
+		else if (game.meta.Black === userId) {
+			gameUi.playWhite = false;
+		}
+		gameUi.elBoard.swap = gameUi.playWhite === false;
+		
+		socket.on('joined', (meta) => console.log('joined', meta));
+		
+		socket.on('applyMove', async (gameId, moveAbbr, curPos) => {
+			if (game.meta.Id !== gameId) {
+				return;
+			}
+			console.log('applyMove', moveAbbr);
+			const isMainLast = game.isMainLast;
+			const lastPos = game.pos;
+			await game.setPos(curPos);
+			const move = game.applyMove(moveAbbr);
+			if (game.isMainLast !== isMainLast) {
+				await game.setPos(lastPos);
+			}
+		});
+		
+		return gameUi;
+	}
+
+	getPlayWhite() {
+		if (this.game.isMainLast) {
+			return this.playWhite;
+		}
+		return this.game.activeWhite;
+	}
+
+	async beforeApplyMove(move, curPos) {
+		if (move.mut) {
+			while (true) {
+				move.mut = prompt("Mutate piece", 'Q') || '';
+				if ('QRNB'.indexOf(move.mut.toUpperCase()) > -1) {
+					break;
+				}
+			}
+		}
+		move = await socket.call('applyMove', this.game.meta.Id, move.toString(), curPos);
+		if (this.game.isMainLast) {
+		}
+		return move;
+	}
+}
 
 localStorage.token = localStorage.token || randomString(16);
 const userId = localStorage.token.slice(0, 8);
@@ -34,19 +106,7 @@ const socket = io('/', {
 		token: localStorage.token,
 	},
 });
-socket.call = function (funcName, ...args) {
-	return new Promise((resolve, reject) => {
-		this.emit(funcName, ...args, function (res, err) {
-			if (err) {
-				reject(err);
-			}
-			else {
-				resolve(res);
-			}
-		});
-	});
-};
-let game;
+
 
 const params = new URLSearchParams(document.location.search);
 const gameId = params.get('gameId');
@@ -55,86 +115,16 @@ if (!gameId) {
 	document.location.href = new URL('?' + params, document.location.href).toString();
 }
 
-socket.on('joined', (meta) => console.log('joined', meta));
-
-socket.on('connect', () => {
-	socket.emit('joinGame', gameId, async (err, pgn) => {
-		game = window.game = await Game.parsePgn(pgn);
-		const lastMove = await game.seekToEnd();
-		
-		chessBoard.state = game.state;
-		game.events.addEventListener('changePos', (event) => {
-			const game = event.detail.game;
-			const move = game.getCurrentMove();
-			chessBoard.setState(game.state);
-			chessBoard.showArrows(move);
-			chessBoard.dots = '';
-		});
-		game.events.addEventListener('applyMove', (event) => {
-			const game = event.detail.game;
-			chessHistory.textContent = game.history.toPgn();
-		});
-		
-		if (game.meta.White === userId) {
-			playWhite = true;
-		}
-		else if (game.meta.Black === userId) {
-			playWhite = false;
-		}
-		chessBoard.swap = playWhite === false;
-	});
+gameUi = window.gameUi = SioGameUiBridge.create({
+	chessBoard,
+	chessHistory,
+	socket,
+	gameId,
+	userId,
 });
+game = window.game = gameUi.game;
 
-socket.on('applyMove', (gameId, moveAbbr) => {
-	if (game.meta.Id !== gameId) {
-		return;
-	}
-	console.log('applyMove', moveAbbr);
-	const move = game.applyMove(moveAbbr);
-});
-
-let selected = null;
-async function onChessClick(event) {
-	if (playWhite === null || playWhite != game.activeWhite) {
-		return;
-	}
-	const coord = event.detail.coord;
-	const piece = game.get(coord);
-	
-	if (selected) {
-		if (coord.txt === selected.coord.txt) {
-			chessBoard.dots = '';
-			selected = null;
-			return;
-		}
-		else if (piece && piece.isWhite === selected.piece.isWhite) {
-			chessBoard.dots = '';
-			selected = null;
-			return await onChessClick.call(this, event);
-		}
-		else {
-			const moveAbbr = selected.coord.txt + coord.txt;
-			await new Promise((resolve, reject) => {
-				socket.emit('applyMove', game.meta.Id, moveAbbr, (err, moveAbbr) => {
-					if (err) {
-						return reject(new Error(err));
-					}
-					const move = game.applyMove(moveAbbr);
-					resolve(move);
-				});
-			});
-			selected = null;
-		}
-	}
-	else if (piece && piece.isWhite === game.activeWhite) {
-		const moveDots = chessBoard.showMoveDots(coord);
-		chessBoard.dots = moveDots;
-		if (moveDots.length) {
-			selected = { piece, coord };
-		}
-	}
-}
-chessBoard.addEventListener('chessClick', onChessClick);
+////////////////
 
 function randomString(len) {
 	const c = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';

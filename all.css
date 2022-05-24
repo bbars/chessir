@@ -35,6 +35,66 @@ main > * {
 	z-index: 2;
 }
 
+#chessHistory {
+	margin: 0;
+	padding: 1em;
+	border: none;
+	padding: 1em;
+}
+
+#chessHistory:focus,
+#chessHistory [data-type="move"] > button:first-child:focus {
+	outline: none;
+}
+
+#chessHistory [data-type="move"] > button:first-child {
+	background: none;
+	border: transparent 2px solid;
+	border-radius: 3px;
+	padding: 0.2em 0.5em;
+	background: #0001;
+	cursor: pointer;
+	line-height: 1.5em;
+	font-family: monospace;
+}
+#chessHistory [data-type="comment"] {
+	font-style: italic;
+	color: #000c;
+}
+#chessHistory [data-type="history"] {
+	display: inline-block;
+	padding: 0.5em 0 0 0.5em;
+	margin: 0.5em 0 0.5em 0;
+}
+#chessHistory [data-type="move"] > button:first-child,
+#chessHistory [data-type="comment"] {
+	margin: 0 0.5em 0.5em 0;
+}
+#chessHistory[data-type="history"] [data-type="history"],
+#chessHistory [data-type="history"] [data-type="history"] {
+	display: block;
+	background: #0001;
+	border-left: #ccc 2px solid;
+}
+#chessHistory [data-type] > button:first-child {
+	opacity: 0.7;
+}
+#chessHistory [data-type].active > button:first-child {
+	opacity: 1;
+	border-color: #46a;
+}
+#chessHistory [data-type].altered > button:first-child {
+	opacity: 1;
+	border-color: #ccc;
+}
+#chessHistory [data-type="move"].selected > button:first-child {
+	border-color: #f60;
+}
+#chessHistory > [data-type="move"] > button:first-child {
+	font-weight: bold;
+}
+
+
 @media all and (min-aspect-ratio: 9/11) {
 	main {
 		flex-direction: row;

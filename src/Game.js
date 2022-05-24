@@ -1,5 +1,6 @@
 import State from './State.js';
 import Coord from './Coord.js';
+import MoveBase from './MoveBase.js';
 import Move from './Move.js';
 import MoveCapture from './MoveCapture.js';
 import MoveCastling from './MoveCastling.js';
@@ -118,11 +119,57 @@ export default class Game {
 		return move;
 	}
 
-	async seekToStart() {
+	get isMainLast() {
+		return this._pos.length === 1 && this._pos[0] === this.history.length - 1;
+	}
+
+	async seekPrev() {
+		return this.setPos(this.history.findPrevMovePath(this._pos) || [-1]);
+	}
+
+	async seekNext() {
+		return this.setPos(this.history.findNextMovePath(this._pos) || [this.history.length - 1]);
+	}
+
+	async seekInto() {
+		const pos = [].concat(this._pos);
+		const move = this.getCurrentMove();
+		if (!move) {
+			return null;
+		}
+		outer: for (let i = 0; i < move.children.length; i++) {
+			const childHistory = move.children[i];
+			if (!(childHistory instanceof History)) {
+				continue;
+			}
+			pos.push(i);
+			for (let j = 0; j < childHistory.length; j++) {
+				const item = childHistory[j];
+				if (item instanceof MoveBase) {
+					pos.push(j);
+					break outer;
+				}
+			}
+		}
+		if (pos.length - this._pos.length !== 2) {
+			return null;
+		}
+		return this.setPos(pos);
+	}
+
+	async seekOut() {
+		const pos = this._pos.slice(0, -2);
+		if (!pos.length) {
+			return null;
+		}
+		return this.setPos(pos);
+	}
+
+	async seekStart() {
 		return this.setPos([-1]);
 	}
 
-	async seekToEnd() {
+	async seekEnd() {
 		return this.setPos([this.history.length - 1]);
 	}
 
@@ -214,7 +261,7 @@ export default class Game {
 	}
 
 	get activeWhite() {
-		return game.state.activeWhite;
+		return this.state.activeWhite;
 	}
 
 	normMove(...args) {

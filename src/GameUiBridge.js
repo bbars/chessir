@@ -24,8 +24,14 @@ export default class GameUiBridge {
 		this.elHistory = elHistory;
 		this.events = new EventTarget();
 		this._initListeners();
-		this._historyInsert(game.history, this.elHistory);
-		this.elBoard.state = this.game.state;
+		if (this.elHistory) {
+			this._historyInsert(game.history, this.elHistory);
+			this.elHistory.tabIndex = this.elHistory.tabIndex;
+		}
+		if (this.elBoard) {
+			// this.elBoard.state = this.game.state;
+		}
+		game.setPos(game.pos); // trigger event listeners
 	}
 
 	destroy() {
@@ -62,6 +68,7 @@ export default class GameUiBridge {
 		}
 		if (this.elHistory) {
 			this._initListener(this.elHistory, 'click', this.$onHistoryClick.bind(this));
+			this._initListener(this.elHistory, 'keydown', this.$onHistoryKeyDown.bind(this));
 		}
 	}
 
@@ -79,6 +86,7 @@ export default class GameUiBridge {
 		else if (item instanceof MoveBase) {
 			elItem = document.createElement('span');
 			elItem.dataset.type = 'move';
+			elItem.dataset.color = !item.piece ? '' : item.piece.isWhite ? 'w' : 'b';
 			const elItemContent = document.createElement('button');
 			elItemContent.textContent = item.toString(true);
 			elItem.appendChild(elItemContent);
@@ -126,7 +134,8 @@ export default class GameUiBridge {
 			}
 			return elParent;
 		}
-		elParent.insertBefore(elItem, elParent.children[pos[0]]);
+		const elIndex = elParent.dataset.type === 'move' ? pos[0] + 1 : pos[0];
+		elParent.insertBefore(elItem, elParent.children[elIndex]);
 		return elItem;
 	}
 
@@ -148,25 +157,41 @@ export default class GameUiBridge {
 		return this._historyResolvePos(elParent).concat([index]);
 	}
 
-	_historyResolveElement(pos) {
+	_historyResolveElement(pos, cb) {
 		const run = (elHistory, pos) => {
-			if (pos.length === 1) {
-				elHistory.children[pos[0]].classList.add('selected');
-				return elHistory.children[pos[0]];
-			}
 			const elMove = elHistory.children[pos[0]];
-			let elChildHistory = elMove.children[pos[1] + 1];
+			if (cb) {
+				cb(elMove, elHistory);
+			}
+			if (pos.length === 1) {
+				return elMove;
+			}
+			const elChildHistory = elMove.children[pos[1] + 1];
 			return run(elChildHistory, pos.slice(2));
 		};
 		return run(this.elHistory, pos);
 	}
 
 	_historySelect(pos) {
-		this.elHistory.querySelectorAll('.selected').forEach((el) => {
-			el.classList.remove('selected');
+		this.elHistory.querySelectorAll('.active, .selected, .altered').forEach((el) => {
+			el.classList.remove('active', 'selected', 'altered');
 		});
-		const el = this._historyResolveElement(pos);
-		el.classList.add('selected');
+		const el = this._historyResolveElement(pos, (elMove, elHistory) => {
+			elHistory.classList.add('active');
+			if (!elMove) {
+				return;
+			}
+			for (const el of elHistory.children) {
+				if (el === elMove) {
+					el.classList.add('altered');
+					break;
+				}
+				el.classList.add('active');
+			}
+		});
+		if (el) {
+			el.classList.add('active', 'selected');
+		}
 	}
 
 	// abstracts:
@@ -249,11 +274,34 @@ export default class GameUiBridge {
 	}
 
 	$onHistoryClick(event) {
+		if (!event.target.matches('button')) {
+			return;
+		}
 		const elMove = event.target.closest('[data-type="move"]');
 		if (!elMove) {
 			return;
 		}
 		const pos = this._historyResolvePos(elMove);
 		this.game.setPos(pos);
+	}
+
+	async $onHistoryKeyDown(event) {
+		if (event.keyCode === 37) {
+			await this.game.seekPrev();
+		}
+		else if (event.keyCode === 39) {
+			await this.game.seekNext();
+		}
+		else if (event.keyCode === 38) {
+			await this.game.seekOut();
+		}
+		else if (event.keyCode === 40) {
+			await this.game.seekInto();
+		}
+		else {
+			// console.log(event.keyCode, event);
+			return;
+		}
+		event.preventDefault();
 	}
 }
