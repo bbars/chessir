@@ -11,3 +11,4 @@ export { default as MoveCastling } from './src/MoveCastling.js';
 export { default as State } from './src/State.js';
 export { default as PgnTokenizer } from './src/PgnTokenizer.js';
 export { default as HTMLChessBoardElement } from './src/ui/HTMLChessBoardElement.js';
+export { default as GameUiBridge } from './src/GameUiBridge.js';

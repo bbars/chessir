@@ -217,6 +217,10 @@ export default class Game {
 		return game.state.activeWhite;
 	}
 
+	normMove(...args) {
+		return this.state.normMove(...args);
+	}
+
 	*listMoves(...args) {
 		yield* this.state.listMoves(...args);
 	}

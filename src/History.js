@@ -1,4 +1,5 @@
 import State from './State.js';
+import MoveBase from './MoveBase.js';
 import Move from './Move.js';
 
 export default class History extends Array {
@@ -91,6 +92,23 @@ export default class History extends Array {
 				await new Promise(r => setTimeout(r));
 			}
 		}
+	}
+
+	getItem(path) {
+		let item = this;
+		for (let index of path) {
+			if (item instanceof History) {
+				// okay
+			}
+			else if (item instanceof MoveBase) {
+				item = item.children;
+			}
+			else {
+				throw new Error(`Unable to resolve path: pointing to non-container`);
+			}
+			item = item[index];
+		}
+		return item;
 	}
 
 	*_resolvePathElements(path) {
