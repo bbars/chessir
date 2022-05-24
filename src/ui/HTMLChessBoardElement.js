@@ -195,7 +195,6 @@ tplBoard.innerHTML = `
 		stroke: transparent;
 		stroke-width: 0.025px;
 		transform: translate(-0.5px, -0.5px);
-		cursor: pointer;
 	}
 	
 	:host #elCells > rect:hover {
@@ -355,24 +354,24 @@ export default class HTMLChessBoardElement extends HTMLElement {
 		this.attachShadow({ mode: 'open' });
 		this.shadowRoot.appendChild(tplBoard.content.cloneNode(true));
 		
-		// this.shadowRoot.querySelectorAll('[id]').forEach(el => this['$$' + el.id] = el);
+		// this.shadowRoot.querySelectorAll('[id]').forEach(el => this['$' + el.id] = el);
 		
-		this.$$elArrows = this.shadowRoot.getElementById('elArrows');
-		this.$$elCells = this.shadowRoot.getElementById('elCells');
-		this.$$elFrontDots = this.shadowRoot.getElementById('elFrontDots');
-		this.$$elPieces = this.shadowRoot.getElementById('elPieces');
-		this.$$elRoot = this.shadowRoot.getElementById('elRoot');
+		this.$elArrows = this.shadowRoot.getElementById('elArrows');
+		this.$elCells = this.shadowRoot.getElementById('elCells');
+		this.$elFrontDots = this.shadowRoot.getElementById('elFrontDots');
+		this.$elPieces = this.shadowRoot.getElementById('elPieces');
+		this.$elRoot = this.shadowRoot.getElementById('elRoot');
 		
 		for (const a of 'abcdefgh') {
 			for (const n of '12345678') {
-				const elCell = document.createElementNS(this.$$elCells.namespaceURI, 'rect');
+				const elCell = document.createElementNS(this.$elCells.namespaceURI, 'rect');
 				elCell.dataset.a = a;
 				elCell.dataset.n = n;
-				this.$$elCells.appendChild(elCell);
+				this.$elCells.appendChild(elCell);
 			}
 		}
 		
-		this.$$onCellsClick = this.$$onCellsClick.bind(this);
+		this.$onCellsClick = this.$onCellsClick.bind(this);
 	}
 	
 	connectedCallback() {
@@ -381,10 +380,10 @@ export default class HTMLChessBoardElement extends HTMLElement {
 		this.labels = this.labels;
 		this.state = this._state;
 		
-		this.$$elCells.addEventListener('click', this.$$onCellsClick);
+		this.$elCells.addEventListener('click', this.$onCellsClick);
 	}
 	disconnectedCallback() {
-		this.$$elCells.removeEventListener('click', this.$$onCellsClick);
+		this.$elCells.removeEventListener('click', this.$onCellsClick);
 	}
 	
 	////////////////////
@@ -397,7 +396,7 @@ export default class HTMLChessBoardElement extends HTMLElement {
 			value = value.join(' ');
 		}
 		value = (value || '').toString();
-		this.$$redrawArrows(value);
+		this.$redrawArrows(value);
 		this._ignoreAttributeChanges++;
 		this.setAttribute('arrows', value);
 		this._ignoreAttributeChanges--;
@@ -411,7 +410,7 @@ export default class HTMLChessBoardElement extends HTMLElement {
 			value = value.join(' ');
 		}
 		value = (value || '').toString();
-		this.$$redrawDots(value);
+		this.$redrawDots(value);
 		this._ignoreAttributeChanges++;
 		this.setAttribute('dots', value);
 		this._ignoreAttributeChanges--;
@@ -436,7 +435,7 @@ export default class HTMLChessBoardElement extends HTMLElement {
 		else if (value !== 'inside' && value !== 'outside') {
 			value = null;
 		}
-		this.$$elRoot.setAttribute('viewBox', value === 'outside' ? '-1 -1 10 10' : '0 0 8 8');
+		this.$elRoot.setAttribute('viewBox', value === 'outside' ? '-1 -1 10 10' : '0 0 8 8');
 		this._ignoreAttributeChanges++;
 		if (!value) {
 			this.removeAttribute('labels');
@@ -461,7 +460,7 @@ export default class HTMLChessBoardElement extends HTMLElement {
 		else {
 			this._state = State.fromFen(value);
 		}
-		this.$$redrawState(this._state);
+		this.$redrawState(this._state);
 		this._ignoreAttributeChanges++;
 		this.setAttribute('state', !this._state ? '' : this._state.toFen());
 		this._ignoreAttributeChanges--;
@@ -469,13 +468,13 @@ export default class HTMLChessBoardElement extends HTMLElement {
 	
 	////////////////
 	
-	$$redrawArrows(value) {
+	$redrawArrows(value) {
 		const arrows = value.trim().split(/\s+/).filter(Boolean);
-		while (this.$$elArrows.children.length > arrows.length) {
-			this.$$elArrows.removeChild(this.$$elArrows.children[0]);
+		while (this.$elArrows.children.length > arrows.length) {
+			this.$elArrows.removeChild(this.$elArrows.children[0]);
 		}
-		while (this.$$elArrows.children.length < arrows.length) {
-			this.$$elArrows.appendChild(document.createElementNS(this.$$elArrows.namespaceURI, 'path'));
+		while (this.$elArrows.children.length < arrows.length) {
+			this.$elArrows.appendChild(document.createElementNS(this.$elArrows.namespaceURI, 'path'));
 		}
 		for (let i = arrows.length - 1; i >= 0; i--) {
 			const value = arrows[i].split('.');
@@ -487,7 +486,7 @@ export default class HTMLChessBoardElement extends HTMLElement {
 			for (let j = 0; j < arrow.length; j += 2) {
 				coords.push(Coord.fromTxt(arrow[j] + arrow[j + 1]));
 			}
-			const elArrow = this.$$elArrows.children[i];
+			const elArrow = this.$elArrows.children[i];
 			elArrow.dataset.arrow = arrows[i];
 			const d = [];
 			for (const coord of coords) {
@@ -498,13 +497,13 @@ export default class HTMLChessBoardElement extends HTMLElement {
 		}
 	}
 	
-	$$redrawDots(value) {
+	$redrawDots(value) {
 		const dots = value.trim().split(/\s+/).filter(Boolean);
-		while (this.$$elFrontDots.children.length > dots.length) {
-			this.$$elFrontDots.removeChild(this.$$elFrontDots.children[0]);
+		while (this.$elFrontDots.children.length > dots.length) {
+			this.$elFrontDots.removeChild(this.$elFrontDots.children[0]);
 		}
-		while (this.$$elFrontDots.children.length < dots.length) {
-			this.$$elFrontDots.appendChild(document.createElementNS(this.$$elFrontDots.namespaceURI, 'circle'));
+		while (this.$elFrontDots.children.length < dots.length) {
+			this.$elFrontDots.appendChild(document.createElementNS(this.$elFrontDots.namespaceURI, 'circle'));
 		}
 		for (let i = dots.length - 1; i >= 0; i--) {
 			const value = dots[i].split('.');
@@ -512,19 +511,19 @@ export default class HTMLChessBoardElement extends HTMLElement {
 				continue;
 			}
 			const coord = Coord.parse(value[0].slice(0, 2));
-			const elDot = this.$$elFrontDots.children[i];
+			const elDot = this.$elFrontDots.children[i];
 			elDot.dataset.a = coord.a;
 			elDot.dataset.n = coord.n;
 			elDot.className.baseVal = value.slice(1).join(' ');
 		}
 	}
 	
-	$$redrawState(value) {
-		this.$$elRoot.classList.remove('animated');
+	$redrawState(value) {
+		this.$elRoot.classList.remove('animated');
 		try {
 			if (!value) {
-				while (this.$$elPieces.children[0]) {
-					this.$$elPieces.removeChild(this.$$elPieces.children[0]);
+				while (this.$elPieces.children[0]) {
+					this.$elPieces.removeChild(this.$elPieces.children[0]);
 				}
 				return;
 			}
@@ -533,10 +532,10 @@ export default class HTMLChessBoardElement extends HTMLElement {
 			for (const [coordI, piece] of state.listEntries(null)) {
 				i++;
 				const coord = Coord.fromIndex(coordI);
-				let elPiece = this.$$elPieces.children[i];
+				let elPiece = this.$elPieces.children[i];
 				if (!elPiece) {
-					elPiece = document.createElementNS(this.$$elPieces.namespaceURI, 'use');
-					this.$$elPieces.appendChild(elPiece);
+					elPiece = document.createElementNS(this.$elPieces.namespaceURI, 'use');
+					this.$elPieces.appendChild(elPiece);
 				}
 				elPiece.setAttribute('href', '#piece-' + piece.code);
 				elPiece.setAttribute('width', 1);
@@ -547,15 +546,15 @@ export default class HTMLChessBoardElement extends HTMLElement {
 				elPiece.dataset.a = coord.a;
 				elPiece.dataset.n = coord.n;
 			}
-			while (this.$$elPieces.children[i + 1]) {
-				this.$$elPieces.removeChild(this.$$elPieces.lastChild);
+			while (this.$elPieces.children[i + 1]) {
+				this.$elPieces.removeChild(this.$elPieces.lastChild);
 			}
 		}
 		finally {
-			this.$$elRoot.getClientRects && this.$$elRoot.getClientRects();
+			this.$elRoot.getClientRects && this.$elRoot.getClientRects();
 			// elem.getBoundingClientRect();
 			// void (document.offsetHeight);
-			this.$$elRoot.classList.add('animated');
+			this.$elRoot.classList.add('animated');
 		}
 	}
 	
@@ -563,18 +562,18 @@ export default class HTMLChessBoardElement extends HTMLElement {
 		move = this._state.applyMove(move);
 		
 		if (move instanceof MoveCapture) {
-			const elCapPiece = this.$$getPiece(move.cap);
-			elCapPiece.dataset.captured = this.$$countCapturedPieces();
+			const elCapPiece = this.$getPiece(move.cap);
+			elCapPiece.dataset.captured = this.$countCapturedPieces();
 		}
 		
-		const elMovePiece = this.$$getPiece(move.src);
+		const elMovePiece = this.$getPiece(move.src);
 		elMovePiece.dataset.a = move.dst.a;
 		elMovePiece.dataset.n = move.dst.n;
 		if (move.mut) {
 			elMovePiece.setAttribute('href', '#piece-' + move.mut.code);
 		}
 		if (move instanceof MoveCastling) {
-			const elMovePiece2 = this.$$getPiece(move.src2);
+			const elMovePiece2 = this.$getPiece(move.src2);
 			elMovePiece2.dataset.a = move.dst2.a;
 			elMovePiece2.dataset.n = move.dst2.n;
 		}
@@ -591,20 +590,20 @@ export default class HTMLChessBoardElement extends HTMLElement {
 			throw new Error(`Argument move must be an instance of Move`);
 		}
 		
-		const elMovePiece = this.$$getPiece(move.dst);
+		const elMovePiece = this.$getPiece(move.dst);
 		elMovePiece.dataset.a = move.src.a;
 		elMovePiece.dataset.n = move.src.n;
 		if (move.mut) {
 			elMovePiece.setAttribute('href', '#piece-' + move.piece.code);
 		}
 		if (move instanceof MoveCastling) {
-			const elMovePiece2 = this.$$getPiece(move.dst2);
+			const elMovePiece2 = this.$getPiece(move.dst2);
 			elMovePiece2.dataset.a = move.src2.a;
 			elMovePiece2.dataset.n = move.src2.n;
 		}
 		
 		if (move instanceof MoveCapture) {
-			const elCapPiece = this.$$getCapturedPiece(move.capPiece);
+			const elCapPiece = this.$getCapturedPiece(move.capPiece);
 			delete elCapPiece.dataset.captured;
 			elCapPiece.dataset.a = move.cap.a;
 			elCapPiece.dataset.n = move.cap.n;
@@ -666,37 +665,37 @@ export default class HTMLChessBoardElement extends HTMLElement {
 		return moveDots;
 	}
 	
-	$$getPiece(coord) {
+	$getPiece(coord) {
 		coord = Coord.ensure(coord);
-		return this.$$elPieces
+		return this.$elPieces
 			.querySelector('[data-a="' + coord.a + '"][data-n="' + coord.n + '"]:not([data-captured])')
 		;
 	}
 	
-	$$getCapturedPiece(piece) {
+	$getCapturedPiece(piece) {
 		piece = pieces.Piece.ensure(piece);
-		var elPiece = this.$$elPieces.querySelectorAll('[href="#piece-' + piece.code + '"][data-captured]');
+		var elPiece = this.$elPieces.querySelectorAll('[href="#piece-' + piece.code + '"][data-captured]');
 		elPiece = elPiece[elPiece.length - 1];
 		if (!elPiece) {
-			elPiece = document.createElementNS(this.$$elPieces.namespaceURI, 'use');
-			elPiece.dataset.captured = this.$$countCapturedPieces();
+			elPiece = document.createElementNS(this.$elPieces.namespaceURI, 'use');
+			elPiece.dataset.captured = this.$countCapturedPieces();
 			elPiece.classList.toggle('white', piece.isWhite);
 			elPiece.classList.toggle('black', !piece.isWhite);
 			elPiece.setAttribute('href', '#piece-' + piece.code);
 			elPiece.setAttribute('width', 1);
 			elPiece.setAttribute('height', 1);
-			this.$$elPieces.appendChild(elPiece);
+			this.$elPieces.appendChild(elPiece);
 		}
 		return elPiece;
 	}
 	
-	$$countCapturedPieces() {
-		return this.$$elPieces.querySelectorAll('[data-captured]').length;
+	$countCapturedPieces() {
+		return this.$elPieces.querySelectorAll('[data-captured]').length;
 	}
 	
 	////////////////
 	
-	$$onCellsClick(event) {
+	$onCellsClick(event) {
 		if (!event.target.dataset.a || !event.target.dataset.n) {
 			return;
 		}
