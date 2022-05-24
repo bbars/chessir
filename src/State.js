@@ -467,9 +467,7 @@ export default class State {
 
 	_applyMove(move, skipFinCheck) {
 		const preFen = move.preFen ? null : this.toFen();
-		if (!(move instanceof Move)) {
-			move = this.normMove(move);
-		}
+		move = this.normMove(move);
 		if (move instanceof MoveCapture) {
 			this.delete(move.cap);
 		}
@@ -519,9 +517,7 @@ export default class State {
 		if (!move.preFen) {
 			move.preFen = preFen;
 		}
-		if (!move.postFen) {
-			move.postFen = this.toFen();
-		}
+		move.postFen = this.toFen();
 		return move;
 	}
 
@@ -531,7 +527,12 @@ export default class State {
 
 	normMove(abbr) {
 		if (abbr instanceof Move) {
-			return abbr;
+			const move = abbr;
+			if (move.mut) {
+				move.mut = pieces.Piece.ensure(move.mut);
+				move.mut.isWhite = move.piece.isWhite;
+			}
+			return move;
 		}
 		const preChecks = {
 			srcA: null,
@@ -749,14 +750,14 @@ export default class State {
 		if (add.length === 1 && del.length === 1 && mod.length === 0) {
 			src = Coord.fromIndex(del[0].coordI);
 			dst = Coord.fromIndex(add[0].coordI);
-			if (del[0].piece.isWhite && add[0].piece.isWhite && del[0].piece.name !== add[0].piece.name) {
+			if (del[0].piece.isWhite === add[0].piece.isWhite && del[0].piece.name !== add[0].piece.name) {
 				mut = pieces.Piece.parse(add[0].piece.code);
 			}
 		}
 		if (add.length === 0 && del.length === 1 && mod.length === 1) {
 			src = Coord.fromIndex(del[0].coordI);
 			dst = Coord.fromIndex(mod[0].coordI);
-			if (del[0].piece.isWhite && mod[0].piece2.isWhite && del[0].piece.name !== mod[0].piece2.name) {
+			if (del[0].piece.isWhite === mod[0].piece2.isWhite && del[0].piece.name !== mod[0].piece2.name) {
 				mut = pieces.Piece.parse(mod[0].piece2.code);
 			}
 		}
@@ -771,10 +772,8 @@ export default class State {
 		if (!src || !dst) {
 			throw new Error(`Unable to guess move`);
 		}
-		const move = this.clone().applyMove(src.txt + dst.txt);
-		if (mut) {
-			move.mut = mut;
-		}
+		const moveAbbr = src.txt + dst.txt + (!mut ? '' : `=${mut.code}`);
+		const move = this.clone().applyMove(moveAbbr);
 		if (move.postFen !== state2.toFen()) {
 			throw new Error(`Move found, but target state mismatch`);
 		}
