@@ -512,7 +512,7 @@ export default class State {
 		}
 		
 		if (!skipFinCheck) {
-			move.fin = this.checkFin();
+			move.fin = this._checkFin(!this._activeWhite);
 		}
 		if (!move.preFen) {
 			move.preFen = preFen;
@@ -534,12 +534,10 @@ export default class State {
 			}
 			return move;
 		}
-		const preChecks = {
+		const checks = {
 			srcA: null,
 			srcN: null,
 			srcPiece: null,
-		};
-		const checks = {
 			castling: null,
 			dstA: null,
 			dstN: null,
@@ -560,44 +558,31 @@ export default class State {
 		if (m = /^o-o(-o)?$/i.exec(s)) {
 			checks.castling = m[1] ? true : false;
 		}
-		else if (m = /^([a-z])(\d)x?([a-z])(\d)$/.exec(s)) {
-			preChecks.srcA = m[1];
-			preChecks.srcN = m[2];
-			checks.dstA = m[3];
-			checks.dstN = m[4];
+		else if (m = /^([a-h])(\d)(x)?([a-h])(\d)$/.exec(s)) {
+			checks.srcA = m[1];
+			checks.srcN = m[2];
+			checks.capture = m[3] ? true : null;
+			checks.dstA = m[4];
+			checks.dstN = m[5];
 		}
-		else if (m = /^([A-Z])x([a-z])(\d)$/.exec(s)) {
-			preChecks.srcPiece = m[1];
-			checks.capture = true;
-			checks.dstA = m[2];
-			checks.dstN = m[3];
+		else if (m = /^([A-Z])?(x)?([a-h])?(\d)?$/.exec(s)) {
+			checks.srcPiece = m[1] || 'P';
+			checks.capture = m[2] ? true : null;
+			checks.dstA = m[3] || null;
+			checks.dstN = m[4] || null;
 		}
-		else if (m = /^([a-z])x([a-z])(\d)$/.exec(s)) {
-			preChecks.srcA = m[1];
-			checks.capture = true;
-			checks.dstA = m[2];
-			checks.dstN = m[3];
-		}
-		else if (m = /^([a-z])(\d)$/.exec(s)) {
-			preChecks.srcPiece = 'P';
-			checks.dstA = m[1];
-			checks.dstN = m[2];
-		}
-		else if (m = /^([A-Z])([a-z])(\d)$/.exec(s)) {
-			preChecks.srcPiece = m[1];
-			checks.dstA = m[2];
-			checks.dstN = m[3];
-		}
-		else if (m = /^([A-Z])([a-z])([a-z])(\d)$/.exec(s)) {
-			preChecks.srcPiece = m[1];
-			preChecks.srcA = m[2];
-			checks.dstA = m[3];
-			checks.dstN = m[4];
+		else if (m = /^([A-Z])?([a-h])?(\d)?(x)?([a-h])?(\d)?$/.exec(s)) {
+			checks.srcPiece = m[1] || 'P';
+			checks.srcA = m[2] || null;
+			checks.srcN = m[3] || null;
+			checks.capture = m[4] ? true : null;
+			checks.dstA = m[5] || null;
+			checks.dstN = m[6] || null;
 		}
 		else if (m = /^([A-Z])?([a-z])(\d)(x)?([A-Z])?([a-z])(\d)$/.exec(s)) {
-			preChecks.srcPiece = m[1];
-			preChecks.srcA = m[2];
-			preChecks.srcN = m[3];
+			checks.srcPiece = m[1] || null;
+			checks.srcA = m[2];
+			checks.srcN = m[3];
 			checks.capture = m[4] ? true : null;
 			// checks.capPiece = m[5];
 			checks.dstA = m[6];
@@ -608,16 +593,15 @@ export default class State {
 		}
 		
 		let res;
-		
 		for (const [coordI, piece] of this.listEntries(this.activeWhite)) {
-			if (preChecks.srcPiece != null && piece.name !== preChecks.srcPiece) {
+			if (checks.srcPiece != null && piece.name !== checks.srcPiece) {
 				continue;
 			}
 			const coord = Coord.fromIndex(coordI);
-			if (preChecks.srcA != null && coord.a !== preChecks.srcA) {
+			if (checks.srcA != null && coord.a !== checks.srcA) {
 				continue;
 			}
-			if (preChecks.srcN != null && coord.n !== preChecks.srcN) {
+			if (checks.srcN != null && coord.n !== checks.srcN) {
 				continue;
 			}
 			for (const move of this._listMoves(coord, true)) {
@@ -644,12 +628,23 @@ export default class State {
 				}
 				
 				const state = this.constructor.fromFen(move.postFen);
-				if (state._checkFin(!piece.isWhite) !== false) {
+				const fin = state._checkResult(!piece.isWhite);
+				if (fin === FIN_CHECK || fin === FIN_CHECKMATE || fin === FIN_DRAW) {
 					continue;
 				}
 				
-				if (res) {
-					throw new Error(`Ambigous move ${JSON.stringify(s)}`);
+				ambigousMove: {
+					if (res) {
+						if (!checks.srcPiece && move.piece.name === 'P' && res.piece.name !== 'P') {
+							// use second result
+							break ambigousMove;
+						}
+						if (!checks.srcPiece && move.piece.name !== 'P' && res.piece.name === 'P') {
+							// discard second result
+							continue;
+						}
+						throw new Error(`Ambigous move ${JSON.stringify(s)}`);
+					}
 				}
 				res = move;
 			}
@@ -667,7 +662,7 @@ export default class State {
 		return res;
 	}
 
-	_checkFin(byWhite) {
+	_checkResult(byWhite) {
 		if (byWhite == null) {
 			throw new Error(`Parameter byWhite is required`);
 		}
@@ -705,6 +700,18 @@ export default class State {
 			return FIN_CHECKMATE;
 		}
 		return false;
+	}
+
+	checkResult() {
+		return this._checkResult(!this.activeWhite);
+	}
+
+	_checkFin(byWhite) {
+		const result = this._checkResult(byWhite);
+		return result === FIN_CHECK || result === FIN_CHECKMATE
+			? result
+			: null
+		;
 	}
 
 	checkFin() {
