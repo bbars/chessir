@@ -105,6 +105,15 @@ tplBoard.innerHTML = `
 	:host #elPieces > [data-captured].black {
 		y: +8;
 	}
+	:host #elPieces > .blink {
+		animation: blink 200ms ease 3;
+	}
+	
+	@keyframes blink {
+		0% { opacity: 0; }
+		50% { opacity: 1; }
+		100% { opacity: 0; }
+	}
 	
 	:host #markerDefault {
 		fill: var(--arrow-color-default);
@@ -663,6 +672,19 @@ export default class HTMLChessBoardElement extends HTMLElement {
 		const moveDots = this.constructor.generateMoveDots(this._state, src);
 		this.dots = moveDots;
 		return moveDots;
+	}
+	
+	blinkPiece(coord) {
+		const piece = this.$getPiece(coord);
+		if (!piece) {
+			return false;
+		}
+		piece.classList.remove('blink');
+		// void (piece.offsetHeight);
+		setTimeout(() => {
+			piece.classList.add('blink');
+		});
+		return true;
 	}
 	
 	$getPiece(coord) {

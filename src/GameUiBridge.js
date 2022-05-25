@@ -193,6 +193,7 @@ export default class GameUiBridge {
 		if (el) {
 			el.classList.add('active', 'selected');
 		}
+		return el;
 	}
 
 	deselect() {
@@ -273,13 +274,28 @@ export default class GameUiBridge {
 		}
 		this._selected = false;
 		if (this.elHistory) {
-			this._historySelect(pos);
+			const el = this._historySelect(pos);
+			if (!el) {
+				// do nothing
+			}
+			else if (el.scrollIntoViewIfNeeded) {
+				el.scrollIntoViewIfNeeded();
+			}
+			else {
+				el.scrollIntoView();
+			}
 		}
 	}
 
 	$onGameApplyMove(event) {
 		if (this.elHistory) {
-			this._historyInsert(event.detail.move, this.elHistory, event.detail.pos);
+			const elMove = this._historyInsert(event.detail.move, this.elHistory, event.detail.pos);
+			if (elMove.scrollIntoViewIfNeeded) {
+				elMove.scrollIntoViewIfNeeded();
+			}
+			else {
+				elMove.scrollIntoView();
+			}
 		}
 		if (this.elBoard) {
 			this.elBoard.dots = '';

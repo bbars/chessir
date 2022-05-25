@@ -73,7 +73,7 @@ main > * {
 #chessHistory[data-type="history"] [data-type="history"],
 #chessHistory [data-type="history"] [data-type="history"] {
 	display: block;
-	background: #0001;
+	background: #88888806;
 	border-left: #ccc 2px solid;
 }
 #chessHistory [data-type] > button:first-child {
