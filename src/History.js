@@ -7,7 +7,12 @@ export default class History extends Array {
 
 	constructor(initialState) {
 		super();
-		this.initialState = initialState ? State.fromFen(initialState) : null;
+	}
+
+	static create(initialState) {
+		const res = new this();
+		res.initialState = initialState ? State.fromFen(initialState) : null;
+		return res;
 	}
 
 	toString() {

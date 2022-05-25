@@ -45,4 +45,12 @@ export default class Move extends MoveBase {
 			+ (this.fin || '')
 		;
 	}
+
+	toShortString() {
+		return ''
+			+ (this.src.txt)
+			+ (this.dst.txt)
+			+ (!this.mut ? '' : '=' + this.mut.code)
+		;
+	}
 }

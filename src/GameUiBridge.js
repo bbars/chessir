@@ -1,5 +1,6 @@
 import MoveBase from './MoveBase.js';
 import Comment from './Comment.js';
+import Coord from './Coord.js';
 import History from './History.js';
 import { EventTarget, CustomEvent } from './events.js';
 
@@ -194,6 +195,22 @@ export default class GameUiBridge {
 		}
 	}
 
+	deselect() {
+		this._selected = null;
+		this.elBoard.dots = '';
+	}
+
+	select(coord) {
+		coord = Coord.ensure(coord);
+		this.deselect();
+		const piece = this.game.get(coord);
+		const moveDots = this.elBoard.showMoveDots(coord);
+		this.elBoard.dots = moveDots;
+		if (moveDots.length) {
+			this._selected = { piece, coord };
+		}
+	}
+
 	// abstracts:
 
 	getPlayWhite() {
@@ -221,30 +238,27 @@ export default class GameUiBridge {
 		
 		if (this._selected) {
 			if (coord.txt === this._selected.coord.txt) {
-				this.elBoard.dots = '';
-				this._selected = null;
+				this.deselect();
 				return;
 			}
 			else if (piece && piece.isWhite === this._selected.piece.isWhite) {
-				this.elBoard.dots = '';
-				this._selected = null;
-				return await this.$onBoardChessClick(event);
+				this.select(coord);
+				return;
 			}
 			else {
 				const moveAbbr = this._selected.coord.txt + coord.txt;
 				let move = game.normMove(moveAbbr);
 				const curPos = game.pos;
-				move = (await this.beforeApplyMove(move, curPos)) || move;
+				move = await this.beforeApplyMove(move, curPos);
+				if (!move) {
+					return;
+				}
 				move = game.applyMove(move);
-				this._selected = null;
+				this.deselect();
 			}
 		}
 		else if (piece && piece.isWhite === game.activeWhite) {
-			const moveDots = this.elBoard.showMoveDots(coord);
-			this.elBoard.dots = moveDots;
-			if (moveDots.length) {
-				this._selected = { piece, coord };
-			}
+			this.select(coord);
 		}
 	}
 

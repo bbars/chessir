@@ -28,7 +28,7 @@ export default class Game {
 
 	constructor(initialState, meta) {
 		this.state = initialState || State.createInitial();
-		this.history = new History(this.state.clone());
+		this.history = History.create(this.state.clone());
 		this._pos = [-1];
 		this.meta = Object.assign(this.meta, meta);
 		this.events = new EventTarget();
@@ -187,7 +187,7 @@ export default class Game {
 		let history;
 		
 		const fillHistory = (initialState, ctx, startingIndex = 0) => {
-			const history = new History(initialState);
+			const history = History.create(initialState);
 			let prevMove;
 			for (let i = startingIndex; i < ctx.length; i++) {
 				const item = ctx[i];
@@ -282,5 +282,11 @@ export default class Game {
 
 	findKing(...args) {
 		return this.state.findKing(...args);
+	}
+
+	// wrap root History:
+
+	get initialState() {
+		return !this.history.initialState ? null : this.history.initialState.clone();
 	}
 }
