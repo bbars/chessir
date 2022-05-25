@@ -241,6 +241,75 @@ export default class Game {
 		return res;
 	}
 
+	static async *parsePgnMulti(pgn, parseMovesMaxDepth = 1) {
+		const pgnTokenizer = new PgnTokenizer({
+			singleDocument: false,
+		});
+		const root = pgnTokenizer.process(pgn);
+		
+		const fillHistory = (initialState, ctx, startingIndex = 0) => {
+			const history = History.create(initialState);
+			let prevMove;
+			let i;
+			for (i = startingIndex; i < ctx.length; i++) {
+				const item = ctx[i];
+				if (item instanceof tokenizerflow.Context && item.ctxName === 'comment') {
+					prevMove.children.push(new Comment(item[0][0]));
+				}
+				else if (item instanceof tokenizerflow.Context && item.ctxName === 'alt') {
+					const [childHistory, _] = fillHistory(null, item);
+					prevMove.children.push(childHistory);
+				}
+				else if (item instanceof tokenizerflow.Match && item.patternId === 'moveNumber') {
+					// TODO: check
+				}
+				else if (item instanceof tokenizerflow.Match && item.patternId === 'moveText') {
+					prevMove = new MoveAbbr(item);
+					history.push(prevMove);
+				}
+				else if (item instanceof tokenizerflow.Context && item.ctxName === 'header') {
+					break;
+				}
+			}
+			return [history, i - 1];
+		};
+		
+		let meta = {};
+		let initialState = null;
+		let history = null;
+		for (let i = 0; i < root.length; i++) {
+			const item = root[i];
+			if (item instanceof tokenizerflow.Context && item.ctxName === 'header') {
+				const headerName = item[0][0];
+				const headerValue = item[1].reduce((cap, v) => cap + v[0], '');
+				if (meta[headerName] != null) {
+					throw new Error(`Duplicate header '${headerName}'`);
+				}
+				meta[headerName] = headerValue;
+				if (headerName.toUpperCase() === 'FEN') {
+					initialState = headerValue;
+				}
+			}
+			else {
+				[history, i] = fillHistory(initialState || State.createInitial(), root, i);
+				try {
+					await history.parseMoves(parseMovesMaxDepth);
+					const game = new Game(history.initialState.clone(), meta);
+					game.history = history;
+					yield game;
+				}
+				/*catch (err) {
+					console.error(err);
+				}*/
+				finally {
+					meta = {};
+					initialState = null;
+					history = null;
+				}
+			}
+		}
+	}
+
 	toPgn() {
 		let res = '';
 		for (const k in this.meta) {
