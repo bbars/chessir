@@ -50,7 +50,7 @@ export default class Move extends MoveBase {
 		return ''
 			+ (this.src.txt)
 			+ (this.dst.txt)
-			+ (!this.mut ? '' : '=' + this.mut.code)
+			+ (!this.mut ? '' : '=' + this.mut)
 		;
 	}
 }

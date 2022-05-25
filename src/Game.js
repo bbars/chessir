@@ -177,6 +177,12 @@ export default class Game {
 		return this.history.getMove(this._pos);
 	}
 
+	getNextMove() {
+		const pos = this.pos;
+		pos[pos.length - 1]++;
+		return this.history.getMove(pos);
+	}
+
 	static async parsePgn(pgn, parseMovesMaxDepth = 1) {
 		const pgnTokenizer = new PgnTokenizer({
 			singleDocument: true,
