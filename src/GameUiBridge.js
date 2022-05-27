@@ -117,11 +117,13 @@ export default class GameUiBridge {
 			}
 		}
 		else if (item instanceof MoveBase) {
-			if (item.children) {
+			if (item.children && item.children.length) {
 				for (let i = 0; i < item.children.length; i++) {
 					this._historyInsert(item.children[i], elItem, [i]);
 				}
+				elItem.dataset.hasChildren = '';
 			}
+			elItem.dataset.fullmoveNumber = item.preFen.replace(/^.*?\s+(\d+)$/, '$1');
 		}
 		if (pos.length === 0) {
 			while (elParent.children[0]) {
@@ -136,6 +138,9 @@ export default class GameUiBridge {
 			return elParent;
 		}
 		const elIndex = elParent.dataset.type === 'move' ? pos[0] + 1 : pos[0];
+		if (elParent.dataset.type === 'move') {
+			elParent.dataset.hasChildren = '';
+		}
 		elParent.insertBefore(elItem, elParent.children[elIndex]);
 		return elItem;
 	}
