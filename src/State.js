@@ -629,7 +629,7 @@ export default class State {
 				
 				const state = this.constructor.fromFen(move.postFen);
 				const fin = state._checkResult(!piece.isWhite);
-				if (fin === FIN_CHECK || fin === FIN_CHECKMATE || fin === FIN_DRAW) {
+				if (fin === FIN_CHECK || fin === FIN_CHECKMATE) {
 					continue;
 				}
 				
