@@ -184,64 +184,20 @@ export default class Game {
 	}
 
 	static async parsePgn(pgn, parseMovesMaxDepth = 1) {
-		const pgnTokenizer = new PgnTokenizer({
-			singleDocument: true,
-		});
-		const root = pgnTokenizer.process(pgn);
-		let initialState;
-		let meta = {};
-		let history;
-		
-		const fillHistory = (initialState, ctx, startingIndex = 0) => {
-			const history = History.create(initialState);
-			let prevMove;
-			for (let i = startingIndex; i < ctx.length; i++) {
-				const item = ctx[i];
-				if (item instanceof tokenizerflow.Context && item.ctxName === 'comment') {
-					prevMove.children.push(new Comment(item[0][0]));
-				}
-				else if (item instanceof tokenizerflow.Context && item.ctxName === 'alt') {
-					prevMove.children.push(fillHistory(null, item));
-				}
-				else if (item instanceof tokenizerflow.Match && item.patternId === 'moveNumber') {
-					// TODO: check
-				}
-				else if (item instanceof tokenizerflow.Match && item.patternId === 'moveText') {
-					prevMove = new MoveAbbr(item);
-					history.push(prevMove);
-				}
+		let res = null;
+		for await (const [err, game] of this.parsePgnMulti(pgn, parseMovesMaxDepth)) {
+			if (err || !game) {
+				throw err;
 			}
-			return history;
-		};
-		
-		let i;
-		for (i = 0; i < root.length; i++) {
-			const item = root[i];
-			if (item instanceof tokenizerflow.Context && item.ctxName === 'header') {
-				const headerName = item[0][0];
-				const headerValue = item[1].reduce((cap, v) => cap + v[0], '');
-				if (meta[headerName] != null) {
-					throw new Error(`Duplicate header '${headerName}'`);
-				}
-				meta[headerName] = headerValue;
-				if (headerName.toUpperCase() === 'FEN') {
-					initialState = headerValue;
-				}
+			if (res) {
+				throw new Error(`Multiple games found in PGN. Please use Game.parsePgnMulti`);
 			}
-			else {
-				break;
-			}
+			res = game;
 		}
-		history = fillHistory(initialState || State.createInitial(), root, i);
-		
-		await history.parseMoves(parseMovesMaxDepth);
-		
-		const res = new Game(history.initialState.clone(), meta);
-		res.history = history;
 		return res;
 	}
 
-	static async *parsePgnMulti(pgn, parseMovesMaxDepth = 1) {
+	static async *parsePgnMultiOld(pgn, parseMovesMaxDepth = 1) {
 		const pgnTokenizer = new PgnTokenizer({
 			singleDocument: false,
 		});
@@ -296,17 +252,142 @@ export default class Game {
 					await history.parseMoves(parseMovesMaxDepth);
 					const game = new Game(history.initialState.clone(), meta);
 					game.history = history;
-					yield game;
+					yield [null, game];
 				}
-				/*catch (err) {
-					console.error(err);
-				}*/
+				catch (err) {
+					yield [err, null];
+					// console.error(err);
+				}
 				finally {
 					meta = {};
 					initialState = null;
 					history = null;
 				}
 			}
+		}
+	}
+
+	static async *parsePgnMulti(pgn, parseMovesMaxDepth = 1, callback = null) {
+		const pgnTokenizer = new PgnTokenizer({
+			singleDocument: false,
+		});
+		
+		let headerName;
+		let str = null;
+		let meta = null;
+		let initialState = null;
+		let history = null;
+		let historyStack = [];
+		let prevMove = null;
+		
+		let counter = 0;
+		for (const m of pgnTokenizer.iterate(pgn)) {
+			try {
+				if (m.patternId === 'moveNumber' || m.patternId === 'moveText') {
+					if (!history) {
+						history = History.create(initialState || State.createInitial());
+						historyStack.unshift(history);
+					}
+				}
+				
+				const finalize = (m.patternId === 'headerOpen' && history)
+					|| (m.patternId === 'end')
+					|| (m.patternId === 'eof' && (history || meta))
+				;
+				if (finalize) {
+					if (historyStack.length > 1) {
+						throw new Error(`Unable to find matching ALT bracket at offset ${m.lastIndex}`);
+					}
+					try {
+						if (history) {
+							const pgnProgress = m.lastIndex / pgn.length;
+							const parseMovesCallback = !callback ? null : async (i, len, curDepth, maxDepth) => {
+								if (curDepth > 0) {
+									return;
+								}
+								await callback(pgnProgress, i / len);
+							};
+							await history.parseMoves(parseMovesMaxDepth, parseMovesCallback);
+						}
+						const game = new Game(history.initialState.clone(), meta);
+						if (history) {
+							game.history = history;
+						}
+						yield [null, game];
+					}
+					finally {
+						headerName = null;
+						str = null;
+						meta = null;
+						initialState = null;
+						history = null;
+						historyStack = [];
+						prevMove = null;
+					}
+				}
+				
+				switch (m.patternId) {
+					case 'headerName':
+						if (!meta) {
+							meta = {};
+						}
+						headerName = m.m[1];
+					break;
+					
+					case 'strOpen':
+						str = '';
+					case 'strBsBs':
+					case 'strBsQ':
+					case 'strAny':
+					case 'strClose':
+						str += m.m[0];
+					break;
+					
+					case 'headerClose':
+						const headerValue = JSON.parse(str);
+						if (meta[headerName] != null) {
+							throw new Error(`Duplicate header '${headerName}'`);
+						}
+						meta[headerName] = headerValue;
+						if (headerName.toUpperCase() === 'FEN') {
+							initialState = headerValue;
+						}
+					break;
+					
+					case 'moveNumber':
+						// TODO: check
+					break;
+					
+					case 'moveText':
+						prevMove = new MoveAbbr(m.m);
+						historyStack[0].push(prevMove);
+					break;
+					
+					case 'commentContents':
+						prevMove.children.push(new Comment(m.m[0]));
+					break;
+					
+					case 'altOpen':
+						const childHistory = History.create(null);
+						prevMove.children.push(childHistory);
+						historyStack.unshift(childHistory);
+					break;
+					
+					case 'altClose':
+						historyStack.shift();
+					break;
+				}
+			}
+			catch (err) {
+				yield [err, null];
+			}
+			if (callback && ++counter % 50 === 0) {
+				const pgnProgress = m.lastIndex / pgn.length;
+				await callback(pgnProgress, 0);
+			}
+		}
+		if (callback) {
+			await callback(1, 1);
 		}
 	}
 

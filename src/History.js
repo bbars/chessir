@@ -67,7 +67,7 @@ export default class History extends Array {
 		return res.slice(1);
 	}
 
-	async parseMoves(maxDepth = 1) {
+	async _parseMoves(maxDepth, curDepth, callback) {
 		const state = this.initialState.clone();
 		let counter = 0;
 		for (let i = 0; i < this.length; i++) {
@@ -83,7 +83,7 @@ export default class History extends Array {
 						if (!child.initialState) {
 							child.initialState = state.clone()
 						}
-						child.parseMoves(maxDepth - 1);
+						child._parseMoves(maxDepth - 1, curDepth + 1, callback);
 					}
 				}
 			}
@@ -94,10 +94,14 @@ export default class History extends Array {
 				this[i] = move;
 			}
 			
-			if (++counter % 20 === 0) {
-				await new Promise(r => setTimeout(r));
+			if (++counter % 10 === 0 && callback) {
+				await callback(i, this.length, curDepth, maxDepth);
 			}
 		}
+	}
+
+	async parseMoves(maxDepth = 1, callback = null) {
+		return this._parseMoves(maxDepth, 0, callback);
 	}
 
 	getItem(path) {
