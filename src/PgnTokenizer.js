@@ -127,7 +127,7 @@ export default class PgnTokenizer extends tokenizerflow.Tokenizer {
 			
 			case 'documentSeparator':
 			case 'documentWeakSeparator':
-				return this._ctlCache('15', ['headerOpen', 'moveNumber'], extras);
+				return this._ctlCache('15', ['headerOpen', 'moveNumber', 'eof'], extras);
 		}
 	}
 }
