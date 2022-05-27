@@ -20,7 +20,7 @@ export default class PgnTokenizer extends tokenizerflow.Tokenizer {
 			strAny: /([^"]+)/,
 			strClose: /"/,
 			
-			headerClose: /\s*\][\s\n]+/,
+			headerClose: /\s*\]/,
 			
 			body: /[\n\s]*/,
 			
