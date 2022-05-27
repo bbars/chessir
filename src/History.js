@@ -1,6 +1,7 @@
 import State from './State.js';
 import MoveBase from './MoveBase.js';
 import Move from './Move.js';
+import Comment from './Comment.js';
 
 export default class History extends Array {
 	initialState;
