@@ -6,7 +6,7 @@ import MoveCapture from './MoveCapture.js';
 import MoveCastling from './MoveCastling.js';
 
 const FIN_DRAW = new String('1/2-1/2');
-const FIN_DRAW_RULE_50 = new String('0-0');
+const FIN_DRAW_RULE_50 = new String('1/2-1/2');
 const FIN_CHECK = new String('+');
 const FIN_CHECKMATE = new String('#');
 const INITIAL_FEN_CLASSIC = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
@@ -466,8 +466,8 @@ export default class State {
 	}
 
 	_applyMove(move, skipFinCheck) {
-		const preFen = move.preFen ? null : this.toFen();
 		move = this.normMove(move);
+		const preFen = move.preFen ? null : this.toFen();
 		if (move instanceof MoveCapture) {
 			this.delete(move.cap);
 		}
@@ -587,6 +587,13 @@ export default class State {
 			// checks.capPiece = m[5];
 			checks.dstA = m[6];
 			checks.dstN = m[7];
+		}
+		else if (m = /^([a-h])(\d)([a-h])(\d)([A-Za-z])$/.exec(s)) {
+			checks.srcA = m[1];
+			checks.srcN = m[2];
+			checks.dstA = m[3];
+			checks.dstN = m[4];
+			checks.mut = m[5];
 		}
 		else {
 			throw new Error(`Unable to parse move ${JSON.stringify(s)}`);
