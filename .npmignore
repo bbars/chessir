@@ -5,3 +5,8 @@ node_modules
 /*.sublime-*
 /*.db
 /*.db-journal
+
+/.gitignore
+/demo-server
+/index.html
+/all.css
