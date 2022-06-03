@@ -90,7 +90,7 @@ export default class PgnTokenizer extends tokenizerflow.Tokenizer {
 			
 			case 'headerClose':
 				extras.postPop = extras.postPop || 'header';
-				return this._ctlCache('5', ['headerOpen', /*'body',*/ 'moveNumber'], extras);
+				return this._ctlCache('5', ['headerOpen', /*'body',*/ 'moveNumber', 'eof'], extras);
 			
 			case 'commentOpen':
 				extras.prePush = extras.prePush || 'comment';

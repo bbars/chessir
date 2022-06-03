@@ -299,7 +299,10 @@ export default class Game {
 						throw new Error(`Unable to find matching ALT bracket at offset ${m.lastIndex}`);
 					}
 					try {
-						if (history) {
+						if (!history) {
+							history = History.create(initialState || State.createInitial());
+						}
+						else {
 							const pgnProgress = m.lastIndex / pgn.length;
 							const parseMovesCallback = !callback ? null : async (i, len, curDepth, maxDepth) => {
 								if (curDepth > 0) {
@@ -310,10 +313,12 @@ export default class Game {
 							await history.parseMoves(parseMovesMaxDepth, parseMovesCallback);
 						}
 						const game = new Game(history.initialState.clone(), meta);
-						if (history) {
-							game.history = history;
-						}
+						game.history = history;
 						yield [null, game];
+					}
+					catch (err) {
+						console.error(history.toPgn());
+						throw err;
 					}
 					finally {
 						headerName = null;
