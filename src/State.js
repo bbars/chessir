@@ -793,4 +793,24 @@ export default class State {
 		}
 		return move;
 	}
+
+	getAttackMap() {
+		const res = new Array(this._board.length).fill('--');
+		for (let i = 0; i < res.length; i++) {
+			const dst = Coord.fromIndex(i);
+			let w = 0;
+			let b = 0;
+			for (const src of this.listAttacks(dst, false)) {
+				w++;
+			}
+			for (const src of this.listAttacks(dst, true)) {
+				b++;
+			}
+			res[i] = Math.min(9, +!!w).toString() + Math.min(9, +!!b).toString();
+			if (res[i] === '00') {
+				res[i] = '--';
+			}
+		}
+		return res;
+	}
 }

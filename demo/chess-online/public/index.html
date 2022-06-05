@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Play Chess</title>
 <script src="./socket.io/socket.io.js"></script>
-<script type="module" src="./src/ui/HTMLChessBoardElement.js"></script>
+<script type="module" src="./chessir/src/ui/HTMLChessBoardElement.js"></script>
 </head>
 <body>
 <link rel="stylesheet" type="text/css" href="./all.css">
@@ -15,7 +15,7 @@
 </main>
 <script type="module">
 
-import { Game, GameUiBridge } from './index.js';
+import { Game, GameUiBridge } from './chessir/index.js';
 
 let gameUi = window.gameUi = null;
 let game = window.game = null;
@@ -36,7 +36,7 @@ class SioGameUiBridge extends GameUiBridge {
 		};
 		
 		const pgn = await socket.call('joinGame', gameId);
-		const game = await Game.parsePgn(pgn);
+		const game = await Game.parsePgn(pgn, 99);
 		const gameUi = new this({
 			game,
 			elBoard: chessBoard,
@@ -47,15 +47,32 @@ class SioGameUiBridge extends GameUiBridge {
 		gameUi.gameId = gameId;
 		gameUi.userId = userId;
 		
-		if (game.meta.White === userId) {
-			gameUi.playWhite = true;
+		gameUi.playWhite = this.checkPlayerId(game.meta.White, userId)
+			? true
+			: this.checkPlayerId(game.meta.Black, userId)
+				? false
+				: null
+		;
+		if (gameUi.playWhite === null && !game.meta.White) {
+			if (/^y|yes$/i.test(prompt(`Do you want to play White?`, 'yes') || '')) {
+				gameUi.playWhite = true;
+			}
 		}
-		else if (game.meta.Black === userId) {
-			gameUi.playWhite = false;
+		if (gameUi.playWhite === null && !game.meta.Black) {
+			if (/^y|yes$/i.test(prompt(`Do you want to play Black?`, 'yes') || '')) {
+				gameUi.playWhite = false;
+			}
 		}
-		gameUi.elBoard.swap = gameUi.playWhite === false;
 		
-		socket.on('joined', (meta) => console.log('joined', meta));
+		if (gameUi.playWhite !== null) {
+			const success = await socket.call('playGame', gameId, gameUi.playWhite);
+			if (!success) {
+				gameUi.playWhite = null;
+			}
+		}
+		gameUi.elBoard.swap = !gameUi.playWhite;
+		
+		socket.on('joined', (gameId, playerId) => console.log('joined', gameId, playerId));
 		
 		socket.on('applyMove', async (gameId, moveAbbr, curPos) => {
 			if (game.meta.Id !== gameId) {
@@ -69,6 +86,14 @@ class SioGameUiBridge extends GameUiBridge {
 			if (game.isMainLast !== isMainLast) {
 				await game.setPos(lastPos);
 			}
+		});
+		
+		socket.on('changeMeta', async (gameId, meta) => {
+			if (game.meta.Id !== gameId) {
+				return;
+			}
+			console.log('changeMeta', meta);
+			game.meta = meta;
 		});
 		
 		return gameUi;
@@ -95,15 +120,26 @@ class SioGameUiBridge extends GameUiBridge {
 		}
 		return move;
 	}
+
+	static checkPlayerId(playerId, userId) {
+		const userId2 = String(playerId).slice(-(1 + userId.length));
+		return `#${userId}` === userId2;
+	}
 }
 
 localStorage.token = localStorage.token || randomString(16);
 const userId = localStorage.token.slice(0, 8);
-let playWhite = null;
+while (!localStorage.userName) {
+	localStorage.userName = prompt(`Please enter your name`) || '';
+	localStorage.userName = localStorage.userName.trim();
+}
+const userName = localStorage.userName;
+const playerId = `${userName} #${userId}`;
 
 const socket = io('/', {
 	query: {
 		token: localStorage.token,
+		userName: localStorage.userName,
 	},
 });
 

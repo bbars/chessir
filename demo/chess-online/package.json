@@ -1,6 +1,6 @@
 {
   "type": "module",
-  "name": "chessir-server",
+  "name": "chessir-chess-online",
   "version": "1.0.0",
   "description": "",
   "main": "server.js",
@@ -11,6 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "chessir": "../../",
     "socket.io": "^4.1.3"
   }
 }

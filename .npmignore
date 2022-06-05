@@ -7,6 +7,4 @@ node_modules
 /*.db-journal
 
 /.gitignore
-/demo-server
-/index.html
-/all.css
+/demo
