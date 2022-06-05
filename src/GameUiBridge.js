@@ -321,11 +321,18 @@ export default class GameUiBridge {
 	}
 
 	async $onHistoryKeyDown(event) {
+		const pos = this.game.pos;
 		if (event.keyCode === 37) {
-			await this.game.seekPrev();
+			const pos2 = this.game.history.findPrevMovePath(pos);
+			if (!pos2 || pos.length === pos2.length) {
+				await this.game.seekPrev();
+			}
 		}
 		else if (event.keyCode === 39) {
-			await this.game.seekNext();
+			const pos2 = this.game.history.findNextMovePath(pos);
+			if (!pos2 || pos.length === pos2.length) {
+				await this.game.seekNext();
+			}
 		}
 		else if (event.keyCode === 38) {
 			await this.game.seekOut();
