@@ -1,7 +1,5 @@
 ._*
 node_modules
-/test-*
-/test.*
 /*.sublime-*
 
 /.gitignore
