@@ -50,7 +50,7 @@ async function writeState(fen) {
 	}
 	res = await db.run(...models.State.getUpsertSQL([{
 		sfen,
-		am: '', // chessir.State.fromFen(fen).getAttackMap().join(''),
+		am: chessir.State.fromFen(fen).getAttackMap().join(''),
 	}]));
 	return res.lastID;
 }
