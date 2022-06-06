@@ -3,5 +3,3 @@ node_modules
 /test-*
 /test.*
 /*.sublime-*
-/*.db
-/*.db-journal

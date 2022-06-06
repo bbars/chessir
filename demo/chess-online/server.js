@@ -21,23 +21,46 @@ if (process.argv[2]) {
 console.warn('CONFIG', CONFIG);
 
 
-// serve static files in ./public:
-const directoryServerPublic = new DirectoryServer({
-	pathname: '/',
-	dir: __dirname + '/public',
-});
-
-// serve chessir files:
-const directoryServerChessir = new DirectoryServer({
-	pathname: '/chessir',
-	dir: __dirname + '/node_modules/chessir',
-});
+const directoryServers = [
+	// serve static files in ./public:
+	new DirectoryServer({
+		pathname: '/',
+		dir: __dirname + '/public',
+	}),
+	
+	// serve chessir files:
+	new DirectoryServer({
+		pathname: '/chessir',
+		dir: __dirname + '/node_modules/chessir',
+	}),
+	
+	// serve common-public files:
+	new DirectoryServer({
+		pathname: '/',
+		dir: __dirname + '/../.common-public',
+	}),
+];
 
 const httpServer = http.createServer(async function (req, res) {
 	try {
-		await directoryServerPublic(req, res, async () => {
-			return await directoryServerChessir(req, res);
-		});
+		let countdown = directoryServers.length;
+		for (const directoryServer of directoryServers) {
+			let done = false;
+			countdown--;
+			
+			try {
+				done = await directoryServer(req, res);
+			}
+			catch (err) {
+				if (countdown <= 0) {
+					throw err;
+				}
+			}
+			
+			if (done !== false) {
+				break;
+			}
+		}
 	}
 	catch (err) {
 		console.warn(err);
