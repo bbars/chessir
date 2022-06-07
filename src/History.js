@@ -198,4 +198,24 @@ export default class History extends Array {
 		history[moveIndex] = move;
 		return path;
 	}
+
+	*findAltMovePaths(path) {
+		const move = this.getMove(path);
+		if (!move) {
+			return;
+		}
+		yield [].concat(path);
+		for (let i = 0; i < move.children.length; i++) {
+			const childHistory = move.children[i];
+			if (!(childHistory instanceof this.constructor)) {
+				continue;
+			}
+			for (let j = 0; j < childHistory.length; j++) {
+				if (!(childHistory[j] instanceof MoveBase)) {
+					continue;
+				}
+				yield path.concat([i, j]);
+			}
+		}
+	}
 }
