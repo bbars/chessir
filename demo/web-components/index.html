@@ -8,9 +8,78 @@
 </head>
 <body>
 <h2>Board <code>&lt;chess-board /&gt;</code></h2>
-<div>
-	<chess-board id="chessBoard" labels></chess-board>
+<div id="chessBoardCtl">
+	<chess-board id="chessBoard"></chess-board>
+	<p>
+		<label>
+			state<br />
+			<input type="text" name="state" value="2r1r1k1/p4pp1/2q4p/1p4b1/2n2N2/PR4PP/1PP3Q1/2BR3K w - - 4 30" />
+		</label>
+	</p>
+	<p>
+		<label>
+			arrows<br />
+			<input type="text" name="arrows" value="d8g5.move" />
+		</label>
+	</p>
+	<p>
+		<label>
+			dots<br />
+			<input type="text" name="dots" />
+		</label>
+	</p>
+	<p>
+		<label>
+			<input type="checkbox" name="swap" />
+			swap
+		</label>
+	</p>
+	<p>
+		<label>
+			labels<br />
+			<select name="labels">
+				<option>none</option>
+				<option>inside</option>
+				<option>outside</option>
+			</select>
+		</label>
+	</p>
 </div>
+<script type="text/javascript">
+
+{
+	const els = {
+		state: document.querySelector('#chessBoardCtl [name=state]'),
+		arrows: document.querySelector('#chessBoardCtl [name=arrows]'),
+		dots: document.querySelector('#chessBoardCtl [name=dots]'),
+		swap: document.querySelector('#chessBoardCtl [name=swap]'),
+		labels: document.querySelector('#chessBoardCtl [name=labels]'),
+	};
+	
+	els.state.addEventListener('change', event => {
+		chessBoard.setState(els.state.value);
+	});
+	els.arrows.addEventListener('change', event => {
+		chessBoard.arrows = els.arrows.value;
+	});
+	els.dots.addEventListener('change', event => {
+		chessBoard.dots = els.dots.value;
+	});
+	els.swap.addEventListener('change', event => {
+		chessBoard.swap = els.swap.checked;
+	});
+	els.labels.addEventListener('change', event => {
+		chessBoard.labels = els.labels.value === 'none' ? null : els.labels.value;
+	});
+	
+	window.addEventListener('DOMContentLoaded', () => {
+		els.state.dispatchEvent(new Event('change'));
+		els.arrows.dispatchEvent(new Event('change'));
+		els.dots.dispatchEvent(new Event('change'));
+	});
+}
+
+</script>
 
 <h2>Piece <code>&lt;chess-piece /&gt;</code></h2>
 <div>
