@@ -66,6 +66,7 @@ export default class GameUiBridge {
 		if (this.game) {
 			this._initListener(this.game.events, 'changePos', this.$onGameChangePos.bind(this));
 			this._initListener(this.game.events, 'applyMove', this.$onGameApplyMove.bind(this));
+			this._initListener(this.game.events, 'addMoveComment', this.$onGameAddMoveComment.bind(this));
 		}
 		if (this.elHistory) {
 			this._initListener(this.elHistory, 'click', this.$onHistoryClick.bind(this));
@@ -306,6 +307,12 @@ export default class GameUiBridge {
 			this.elBoard.dots = '';
 		}
 		this._selected = false;
+	}
+
+	$onGameAddMoveComment(event) {
+		if (this.elHistory) {
+			const elComment = this._historyInsert(event.detail.comment, this.elHistory, event.detail.path);
+		}
 	}
 
 	$onHistoryClick(event) {

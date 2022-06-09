@@ -38,25 +38,59 @@ export default class Game {
 		return this.toPgn();
 	}
 
-	applyMove(move) {
-		const oldMove = this.history.getMove(this.pos);
-		move = this.state.applyMove(move);
-		const nextPos = this.history.addNextMove(this._pos, move);
-		const oldPos = this.pos;
-		this._pos = nextPos;
+	applyMove(move, pos) {
+		const prevPos = pos || this.pos;
+		const prevMove = this.history.getMove(prevPos);
+		const follow = prevPos.toString() === this._pos.toString();
+		let state;
+		if (follow) {
+			state = this.state;
+		}
+		else if (prevMove) {
+			state = State.fromFen(prevMove.postFen);
+		}
+		else {
+			state = this.history.getItem(prevPos.slice(0, -1)).initialState.clone();
+		}
+		move = state.applyMove(move);
+		pos = this.history.addNextMove(prevPos, move);
+		if (follow) {
+			this._pos = [].concat(pos);
+		}
 		dispatchEvent(this.events, 'applyMove', {
 			game: this,
-			pos: this.pos,
-			oldPos: oldPos,
-			oldMove: oldMove,
+			pos: pos,
+			prevPos: prevPos,
+			prevMove: prevMove,
 			move: move,
 		});
-		dispatchEvent(this.events, 'changePos', {
+		if (follow) {
+			dispatchEvent(this.events, 'changePos', {
+				game: this,
+				pos: pos,
+				prevPos: prevPos,
+				oldPos: prevPos,
+			});
+		}
+		return { move, pos };
+	}
+
+	addMoveComment(comment, pos) {
+		pos = pos || this.pos;
+		const move = this.history.getMove(pos);
+		if (!(comment instanceof Comment)) {
+			comment = new Comment(comment);
+		}
+		move.children.push(comment);
+		const path = pos.concat([move.children.length - 1]);
+		dispatchEvent(this.events, 'addMoveComment', {
 			game: this,
-			pos: this.pos,
-			oldPos: oldPos,
+			pos: pos,
+			path: path,
+			move: move,
+			comment: comment,
 		});
-		return move;
+		return { comment, pos, path }
 	}
 
 	undoMove() {
