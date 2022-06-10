@@ -164,7 +164,7 @@ sio.on('connection', (socket) => {
 			return response(null, playGame(game, isWhite));
 		});
 		
-		socket.on('applyMove', async (gameId, moveAbbr, curPos, response) => {
+		socket.on('addMove', async (gameId, moveAbbr, curPos, response) => {
 			let game = GAMES[gameId];
 			if (!game) {
 				return response(`Game not found`, null);
@@ -180,8 +180,8 @@ sio.on('connection', (socket) => {
 						return response(`Wrong turn`, null);
 					}
 				}
-				const move = game.applyMove(moveAbbr);
-				socket.in('game-' + gameId).emit('applyMove', gameId, move.toString(), curPos);
+				const { move } = await game.addMove(moveAbbr);
+				socket.in('game-' + gameId).emit('addMove', gameId, move.toString(), curPos);
 				return response(null, move.toString())
 			}
 			catch (err) {

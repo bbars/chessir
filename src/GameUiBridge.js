@@ -65,7 +65,7 @@ export default class GameUiBridge {
 		}
 		if (this.game) {
 			this._initListener(this.game.events, 'changePos', this.$onGameChangePos.bind(this));
-			this._initListener(this.game.events, 'applyMove', this.$onGameApplyMove.bind(this));
+			this._initListener(this.game.events, 'addMove', this.$onGameAddMove.bind(this));
 			this._initListener(this.game.events, 'addMoveComment', this.$onGameAddMoveComment.bind(this));
 		}
 		if (this.elHistory) {
@@ -225,7 +225,7 @@ export default class GameUiBridge {
 		// return true | false | null;
 	}
 
-	async beforeApplyMove(move, curPos) {
+	async beforeAddMove(move, curPos) {
 		throw new Error(`Not implemented`);
 		/**
 		 * Change move.mut if needed
@@ -256,11 +256,11 @@ export default class GameUiBridge {
 				const moveAbbr = this._selected.coord.txt + coord.txt;
 				let move = game.normMove(moveAbbr);
 				const curPos = game.pos;
-				move = await this.beforeApplyMove(move, curPos);
+				move = await this.beforeAddMove(move, curPos);
 				if (!move) {
 					return;
 				}
-				move = game.applyMove(move);
+				move = await game.addMove(move, curPos);
 				this.deselect();
 			}
 		}
@@ -293,7 +293,7 @@ export default class GameUiBridge {
 		}
 	}
 
-	$onGameApplyMove(event) {
+	$onGameAddMove(event) {
 		if (this.elHistory) {
 			const elMove = this._historyInsert(event.detail.move, this.elHistory, event.detail.pos);
 			if (elMove.scrollIntoViewIfNeeded) {

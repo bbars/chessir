@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Trainer</title>
-<script type="module" src="https://unpkg.com/chessir@latest/src/ui/index.js"></script>
+<script type="module" src="../../src/ui/index.js"></script>
 </head>
 <body>
 <link rel="stylesheet" type="text/css" href="../.common-public/all.css">
@@ -14,7 +14,7 @@
 </main>
 <script type="module">
 
-import { Game, GameUiBridge, Piece } from 'https://unpkg.com/chessir@latest/index.js';
+import { Game, GameUiBridge, Piece } from '../../index.js';
 
 console.time('parsePgn');
 const games = [];
@@ -55,7 +55,7 @@ class TrainerGameUiBridge extends GameUiBridge {
 		return this.elBoard.swap === false;
 	}
 
-	async beforeApplyMove(move, curPos) {
+	async beforeAddMove(move, curPos) {
 		if (move.mut) {
 			while (true) {
 				move.mut = prompt("Mutate piece", 'Q') || '';
@@ -86,7 +86,7 @@ class TrainerGameUiBridge extends GameUiBridge {
 			// already synchronized:
 			const nextMove = await this.originalGame.getNextMove();
 			if (nextMove) {
-				this.game.applyMove(nextMove);
+				await this.game.addMove(nextMove);
 			}
 		}, 1000);
 		return originalMove;

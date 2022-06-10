@@ -38,9 +38,9 @@ export default class Game {
 		return this.toPgn();
 	}
 
-	applyMove(move, pos) {
-		const prevPos = pos || this.pos;
-		const prevMove = this.history.getMove(prevPos);
+	async addMove(move, afterPos) {
+		const prevPos = afterPos || this.pos;
+		const prevMove = await this.history.getMoveParsed(prevPos);
 		const follow = prevPos.toString() === this._pos.toString();
 		let state;
 		if (follow) {
@@ -53,11 +53,11 @@ export default class Game {
 			state = this.history.getItem(prevPos.slice(0, -1)).initialState.clone();
 		}
 		move = state.applyMove(move);
-		pos = this.history.addNextMove(prevPos, move);
+		const pos = this.history.addNextMove(prevPos, move);
 		if (follow) {
 			this._pos = [].concat(pos);
 		}
-		dispatchEvent(this.events, 'applyMove', {
+		dispatchEvent(this.events, 'addMove', {
 			game: this,
 			pos: pos,
 			prevPos: prevPos,

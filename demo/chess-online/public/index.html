@@ -74,18 +74,12 @@ class SioGameUiBridge extends GameUiBridge {
 		
 		socket.on('joined', (gameId, playerId) => console.log('joined', gameId, playerId));
 		
-		socket.on('applyMove', async (gameId, moveAbbr, curPos) => {
+		socket.on('addMove', async (gameId, moveAbbr, curPos) => {
 			if (game.meta.Id !== gameId) {
 				return;
 			}
-			console.log('applyMove', moveAbbr);
-			const isMainLast = game.isMainLast;
-			const lastPos = game.pos;
-			await game.setPos(curPos);
-			const move = game.applyMove(moveAbbr);
-			if (game.isMainLast !== isMainLast) {
-				await game.setPos(lastPos);
-			}
+			console.log('addMove', moveAbbr);
+			const { move } = await game.addMove(moveAbbr, curPos);
 		});
 		
 		socket.on('changeMeta', async (gameId, meta) => {
@@ -106,7 +100,7 @@ class SioGameUiBridge extends GameUiBridge {
 		return this.game.activeWhite;
 	}
 
-	async beforeApplyMove(move, curPos) {
+	async beforeAddMove(move, curPos) {
 		if (move.mut) {
 			while (true) {
 				move.mut = prompt("Mutate piece", 'Q') || '';
@@ -115,7 +109,7 @@ class SioGameUiBridge extends GameUiBridge {
 				}
 			}
 		}
-		move = await socket.call('applyMove', this.game.meta.Id, move.toString(), curPos);
+		move = await socket.call('addMove', this.game.meta.Id, move.toString(), curPos);
 		if (this.game.isMainLast) {
 		}
 		return move;
