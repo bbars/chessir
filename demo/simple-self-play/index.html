@@ -24,7 +24,7 @@ class SelfPlayGameUiBridge extends GameUiBridge {
 		return this.game.activeWhite;
 	}
 
-	async beforeApplyMove(move, curPos) {
+	async beforeAddMove(move, curPos) {
 		if (move.mut) {
 			while (true) {
 				move.mut = prompt("Mutate piece", 'Q') || '';
