@@ -41,7 +41,7 @@ export default class PieceP extends Piece {
 			const atStart = src.y === (this.isWhite ? 1 : 6);
 			if (atStart && (dst = src.offset(0, offY * 2)) && !state.get(dst)) {
 				move = new Move(this, src, dst);
-				move.patchStateEnPassant = move.dst;
+				move.patchStateEnPassant = move.dst.offset(0, this.isWhite ? -1 : +1);
 				res[dst.txt] = move;
 			}
 		}
@@ -78,15 +78,19 @@ export default class PieceP extends Piece {
 
 	_getEnPassantMoveIfAvailable(state, src) {
 		const ep = state.enPassant;
-		const capPiece = !ep ? null : state.get(ep);
+		if (!ep) {
+			return null;
+		}
 		const offY = this.isWhite ? +1 : -1;
+		const cap = ep.offset(0, -offY);
+		const capPiece = !ep ? null : state.get(cap);
 		if (ep
 		&& capPiece
 		&& capPiece.isWhite != this.isWhite
-		&& src.y === ep.y
+		&& ep.y === (src.y + offY)
 		&& Math.abs(ep.x - src.x) === 1) {
-			const dst = ep.offset(0, offY);
-			return new MoveCapture(this, src, dst, capPiece, ep);
+			const dst = ep;
+			return new MoveCapture(this, src, dst, capPiece, cap);
 		}
 		return null;
 	}
