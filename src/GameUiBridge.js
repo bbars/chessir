@@ -2,7 +2,7 @@ import MoveBase from './MoveBase.js';
 import Comment from './Comment.js';
 import Coord from './Coord.js';
 import History from './History.js';
-import { EventTarget, CustomEvent } from './events.js';
+import { EventTarget, CustomEvent } from './utils/events.js';
 
 function dispatchEvent(target, eventType, detail) {
 	target.dispatchEvent(new CustomEvent(eventType, {

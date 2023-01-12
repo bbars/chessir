@@ -1,4 +1,4 @@
-import tokenizerflow from './tokenizerflow.js';
+import tokenizerflow from './utils/tokenizerflow.js';
 
 export default class PgnTokenizer extends tokenizerflow.Tokenizer {
 	conf;

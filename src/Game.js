@@ -1,16 +1,14 @@
+// noinspection JSUnusedGlobalSymbols,ExceptionCaughtLocallyJS,JSUnusedLocalSymbols
+
 import State from './State.js';
-import Coord from './Coord.js';
 import MoveBase from './MoveBase.js';
-import Move from './Move.js';
-import MoveCapture from './MoveCapture.js';
-import MoveCastling from './MoveCastling.js';
 import MoveAbbr from './MoveAbbr.js';
-import * as pieces from './pieces/index.js';
 import Comment from './Comment.js';
 import History from './History.js';
 import PgnTokenizer from './PgnTokenizer.js';
-import tokenizerflow from './tokenizerflow.js';
-import { EventTarget, CustomEvent } from './events.js';
+import tokenizerflow from './utils/tokenizerflow.js';
+import { EventTarget, CustomEvent } from './utils/events.js';
+import Storage from './utils/Storage.js';
 
 function dispatchEvent(target, eventType, detail) {
 	target.dispatchEvent(new CustomEvent(eventType, {
@@ -30,8 +28,17 @@ export default class Game {
 		this.state = initialState || State.createInitial();
 		this.history = History.create(this.state.clone());
 		this._pos = [-1];
-		this.meta = Object.assign(this.meta, meta);
 		this.events = new EventTarget();
+		this.meta = new Storage((name, newValue, oldValue) => {
+			dispatchEvent(this.events, 'changeMeta', {
+				game: this,
+				meta: this.meta,
+				name: name,
+				newValue: newValue,
+				oldValue: oldValue,
+			});
+		});
+		Object.assign(this.meta, meta);
 	}
 
 	toString() {
@@ -244,9 +251,15 @@ export default class Game {
 			for (i = startingIndex; i < ctx.length; i++) {
 				const item = ctx[i];
 				if (item instanceof tokenizerflow.Context && item.ctxName === 'comment') {
+					if (!prevMove) {
+						continue; // TODO: find a way to store comments on a root
+					}
 					prevMove.children.push(new Comment(item[0][0]));
 				}
 				else if (item instanceof tokenizerflow.Context && item.ctxName === 'alt') {
+					if (!prevMove) {
+						continue; // TODO: find a way to store alternative branches on a root
+					}
 					const [childHistory, _] = fillHistory(null, item);
 					prevMove.children.push(childHistory);
 				}
@@ -351,7 +364,9 @@ export default class Game {
 						yield [null, game];
 					}
 					catch (err) {
-						console.error(history.toPgn());
+						if (history !== null) {
+							console.error(history.toPgn());
+						}
 						throw err;
 					}
 					finally {
@@ -365,6 +380,7 @@ export default class Game {
 					}
 				}
 				
+				// noinspection FallThroughInSwitchStatementJS,JSObjectNullOrUndefined
 				switch (m.patternId) {
 					case 'headerName':
 						if (!meta) {
