@@ -1,4 +1,5 @@
-import Game from '../src/Game.js';
+import Game from './Game.js';
+import assert from 'assert';
 
 const pgn = `[Event "SWE-ch"]
 [Site "Gothenburg"]
@@ -43,22 +44,24 @@ function checkLastEvents(...events) {
 	const lastCheckedIndexSaved = lastCheckedIndex;
 	let index = eventHub.length - 1;
 	lastCheckedIndex = index;
+	let eventsMatched = 0;
 	for (const expectedEvent of events) {
 		for (index; index > lastCheckedIndexSaved; index--) {
 			const gotEvent = eventHub[index];
-			if (gotEvent.name === expectedEvent.name) {
+			if (gotEvent.type === expectedEvent.type) {
+				eventsMatched++;
 				for (const k in expectedEvent.detail) {
-					console.assert(
-						expectedEvent.detail[k] === gotEvent.detail[k],
-						`Wrong event detail: event(${gotEvent.name}).detail.${k};`,
-						'expected', expectedEvent.detail[k],
-						'got', gotEvent.detail[k],
+					assert.equal(
+						gotEvent.detail[k],
+						expectedEvent.detail[k],
+						`Wrong event detail: event(${gotEvent.type}).detail.${k}`,
 					);
 				}
 				break;
 			}
 		}
 	}
+	assert.equal(eventsMatched, events.length, `Not all events were matched`);
 }
 
 let game;
@@ -79,12 +82,19 @@ it('Game: do moves', async () => {
 	let move;
 	
 	move = (await game.addMove('Rxe1')).move; // Rd1xe1
-	console.assert(move.piece.name === 'R');
-	console.assert(move.src.txt === 'd1');
-	console.assert(move.dst.txt === 'e1');
+	assert.equal(move.piece.name, 'R');
+	assert.equal(move.src.txt, 'd1');
+	assert.equal(move.dst.txt, 'e1');
+	
+	// TODO: fix problems with event props
+	// (Intercepted events do not have the "detail" property)
+	checkLastEvents(
+		{ type: 'addMove', /*detail: { game }*/ },
+		{ type: 'changePos' },
+	);
 	
 	move = (await game.addMove('b2f2')).move; // Qb2f2
-	console.assert(move.piece.name === 'Q');
-	console.assert(move.src.txt === 'b2');
-	console.assert(move.dst.txt === 'f2');
+	assert.equal(move.piece.name, 'Q');
+	assert.equal(move.src.txt, 'b2');
+	assert.equal(move.dst.txt, 'f2');
 });

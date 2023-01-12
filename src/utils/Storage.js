@@ -1,7 +1,10 @@
 export default class Storage {
-	constructor(onChange) {
-		if (typeof onChange !== 'function') {
-			onChange = null;
+	constructor(onChange, rewriter) {
+		if (onChange && typeof onChange !== 'function') {
+			throw new Error(`Parameter 'onChange' must be a function (or empty)`);
+		}
+		if (rewriter && typeof rewriter !== 'function') {
+			throw new Error(`Parameter 'rewriter' must be a function (or empty)`);
 		}
 		return new Proxy(this, {
 			get: (target, name) => {
@@ -13,11 +16,13 @@ export default class Storage {
 					delete target[name];
 				}
 				else {
-					newValue = String(newValue);
+					if (rewriter) {
+						newValue = rewriter.call(this, newValue);
+					}
 					target[name] = newValue;
 				}
 				if (onChange) {
-					onChange(name, newValue, oldValue, target);
+					onChange.call(this, name, newValue, oldValue, target);
 				}
 				return true;
 			},

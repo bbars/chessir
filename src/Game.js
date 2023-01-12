@@ -37,7 +37,7 @@ export default class Game {
 				newValue: newValue,
 				oldValue: oldValue,
 			});
-		});
+		}, String);
 		Object.assign(this.meta, meta);
 	}
 

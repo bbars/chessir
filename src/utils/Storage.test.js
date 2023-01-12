@@ -1,15 +1,16 @@
-import Storage from '../src/utils/Storage.js';
+import Storage from './Storage.js';
+import assert from 'assert';
 
 // prepare:
 let lastUpdate = null;
 const checkLast = (name, newValue, oldValue) => {
-	console.assert(lastUpdate.name === name, `Wrong name`);
-	console.assert(lastUpdate.newValue === newValue, `Wrong newValue`);
-	console.assert(lastUpdate.oldValue === oldValue, `Wrong oldValue`);
+	assert(lastUpdate.name === name, `Wrong name`);
+	assert(lastUpdate.newValue === newValue, `Wrong newValue`);
+	assert(lastUpdate.oldValue === oldValue, `Wrong oldValue`);
 }
 const storage = new Storage((name, newValue, oldValue) => {
 	lastUpdate = { name, newValue, oldValue };
-});
+}, String);
 
 // tests:
 const changes = [
@@ -36,6 +37,12 @@ const changes = [
 		setValue: true,
 		expectNewValue: 'true',
 		expectOldValue: undefined,
+	},
+	{
+		name: 'bool',
+		setValue: false,
+		expectNewValue: 'false',
+		expectOldValue: 'true',
 	},
 ];
 
