@@ -45,13 +45,13 @@ function checkLastEvents(...events) {
 	let index = eventHub.length - 1;
 	lastCheckedIndex = index;
 	let eventsMatched = 0;
-	for (const expectedEvent of events) {
+	for (const expectedEvent of events.reverse()) {
 		for (index; index > lastCheckedIndexSaved; index--) {
 			const gotEvent = eventHub[index];
 			if (gotEvent.type === expectedEvent.type) {
 				eventsMatched++;
 				for (const k in expectedEvent.detail) {
-					assert.equal(
+					assert.deepEqual(
 						gotEvent.detail[k],
 						expectedEvent.detail[k],
 						`Wrong event detail: event(${gotEvent.type}).detail.${k}`,
@@ -69,32 +69,38 @@ it('Game: parse PGN', async () => {
 	game = await Game.parsePgn(pgn);
 	for (const eventName in knownEvents) {
 		game.events.addEventListener(eventName, (event) => {
-			eventHub.push(event);
+			eventHub.push({
+				type: event.type,
+				detail: event.detail,
+			});
 		});
 	}
 });
 
 it('Game: seek end', async () => {
 	await game.seekEnd();
+	
+	checkLastEvents(
+		{ type: 'changePos', detail: { prevPos: [-1], pos: [45] } },
+	);
 });
 
 it('Game: do moves', async () => {
 	let move;
 	
-	move = (await game.addMove('Rxe1')).move; // Rd1xe1
-	assert.equal(move.piece.name, 'R');
-	assert.equal(move.src.txt, 'd1');
-	assert.equal(move.dst.txt, 'e1');
+	move = (await game.addMove('Rxe1')).move; //
+	assert.equal(move.toString(), 'Rd1xNe1');
 	
-	// TODO: fix problems with event props
-	// (Intercepted events do not have the "detail" property)
 	checkLastEvents(
-		{ type: 'addMove', /*detail: { game }*/ },
-		{ type: 'changePos' },
+		{ type: 'addMove', detail: { prevPos: [45], pos: [46] } },
+		{ type: 'changePos', detail: { prevPos: [45], pos: [46] } },
 	);
 	
 	move = (await game.addMove('b2f2')).move; // Qb2f2
-	assert.equal(move.piece.name, 'Q');
-	assert.equal(move.src.txt, 'b2');
-	assert.equal(move.dst.txt, 'f2');
+	assert.equal(move.toString(), 'Qb2f2#');
+	
+	checkLastEvents(
+		{ type: 'addMove', detail: { prevPos: [46], pos: [47] } },
+		{ type: 'changePos', detail: { prevPos: [46], pos: [47] } },
+	);
 });
